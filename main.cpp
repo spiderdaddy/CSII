@@ -57,7 +57,7 @@ struct Segment {
 };
 
 
-int num_points = 1000;
+int num_points = 300;
 float inner_radius = .39;
 float outer_radius = 40;
 
@@ -277,7 +277,10 @@ void CalcTotalMass() {
 
 float r2 = 1/sqrt(2);
 
+
 void ApplyNearestNeighbourGravity() {
+
+    std::vector<float> dd(num_points*num_points, 0.0f);
 
 
     for (size_t t = 0; t < num_points; t++) {
@@ -296,56 +299,53 @@ void ApplyNearestNeighbourGravity() {
             n[7] = (((t+num_points-1)%num_points) * num_points) + r - 1;
 
             // radial component
-            float d =   ( r2 * segment[n[3]].density + segment[n[4]].density + r2 * segment[n[5]].density )
-                      - ( r2 * segment[n[1]].density + segment[n[0]].density + r2 * segment[n[7]].density )
-                      - 10/(segment[i].r*segment[i].r);
-
-            /*
-            if (i == 920) {
-                std::cout << "r i   :" << newSegment[i].density << " " << d << "\n";
-            }
-            if (n[4] == 920) {
-                std::cout << "r n[4]:" << newSegment[n[4]].density << " " << d << "\n";
-            }
-            if (n[0] == 920) {
-                std::cout << "r n[0]:" << newSegment[n[0]].density << " " << d << " " << "\n";
-            }
-
-*/
-            float d1 = min( newSegment[i].density, abs(d));
-            newSegment[i].density -= d1;
-            if ( d > 0 ) {
-                newSegment[n[4]].density += d1;
-            } else {
-                newSegment[n[0]].density += d1;
-            }
+            float dr =   ( r2 * segment[n[3]].density + segment[n[4]].density + r2 * segment[n[5]].density )
+                       - ( r2 * segment[n[1]].density + segment[n[0]].density + r2 * segment[n[7]].density )
+                       - 10/(segment[i].r*segment[i].r);
 
             // angular component
-            d =   ( r2 * segment[n[1]].density + segment[n[2]].density + r2 * segment[n[3]].density )
-                - ( r2 * segment[n[5]].density + segment[n[6]].density + r2 * segment[n[7]].density );
+            float dt =   ( r2 * segment[n[1]].density + segment[n[2]].density + r2 * segment[n[3]].density )
+                       - ( r2 * segment[n[5]].density + segment[n[6]].density + r2 * segment[n[7]].density );
 
-/*
-            if (i == 920) {
-                std::cout << "t i   :" << newSegment[i].density << " " << d << " "<< "\n";
-            }
-            if (n[2] == 920) {
-                std::cout << "t n[2]:" << newSegment[n[2]].density << " " << d << " "<< "\n";
-            }
-            if (n[6] == 920) {
-                std::cout << "t n[6]:" << newSegment[n[6]].density << " " << d << " "<< "\n";
-            }
+            float d = sqrt(dr*dr+dt*dt);
+            d = min( segment[i].density, d );
+            dd[i] -= d;
 
-*/
-
-            d1 = min( newSegment[i].density, abs(d));
-            newSegment[i].density -= d1;
-            if ( d > 0 ) {
-                newSegment[n[2]].density += d1;
+            float pdr;
+            float pdt;
+            float pc = (abs(dr)+abs(dt));
+            if ( pc > 0 ) {
+                pdr = d * abs(dr) / (abs(dr) + abs(dt));
+                pdt = d * abs(dt) / (abs(dr) + abs(dt));
             } else {
-                newSegment[n[6]].density += d1;
+                pdr = 0;
+                pdt = 0;
+            }
+            if ( dr > 0 ) {
+                dd[n[3]] += 0.25 * pdr;
+                dd[n[4]] += 0.50 * pdr;
+                dd[n[5]] += 0.25 * pdr;
+            } else {
+                dd[n[1]] += 0.25 * pdr;
+                dd[n[0]] += 0.50 * pdr;
+                dd[n[7]] += 0.25 * pdr;
+            }
+
+            if ( dt > 0 ) {
+                dd[n[1]] += 0.25 * pdt;
+                dd[n[2]] += 0.50 * pdt;
+                dd[n[3]] += 0.25 * pdt;
+            } else {
+                dd[n[7]] += 0.25 * pdt;
+                dd[n[6]] += 0.50 * pdt;
+                dd[n[5]] += 0.25 * pdt;
             }
 
         }
+    }
+
+    for ( int i = 0; i < newSegment.size(); i++) {
+        newSegment[i].density = max( 0.0f, newSegment[i].density + dd[i]);
     }
 }
 
@@ -388,9 +388,20 @@ void RenderFunction(void) {
 }
 
 void MapDensityToColour() {
+
+/*
+    float maxDensity = 1.0;
+    for (int i = 0; i < segment.size(); i++) {
+        if (segment[i].density > maxDensity) {
+            maxDensity = segment[i].density;
+        }
+    }
+*/
+
+
     for (int i = 0; i < segmentColours.size(); i++) {
         SegmentColours* scp = &segmentColours[i];
-        scp->c1.r = segment[i].density;
+        scp->c1.r = min( segment[i].density, 1.0f );
         scp->c1.g = scp->c1.r;
         scp->c1.b = scp->c1.r;
         scp->c2 = scp->c1;
