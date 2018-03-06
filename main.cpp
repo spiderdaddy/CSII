@@ -30,37 +30,46 @@ struct RGBA {
     float r, g, b, a;
 };
 
-struct SegmentArea {
-    XY coord1;
-    XY coord2;
-    XY coord3;
-    XY coord4;
-    XY coord5;
-    XY coord6;
+struct SegmentVertices {
+    XY v1;
+    XY v2;
+    XY v3;
+    XY v4;
+    XY v5;
+    XY v6;
 
 };
 
-struct SegmentProperty {
-    RGBA colour1;
-    RGBA colour2;
-    RGBA colour3;
-    RGBA colour4;
-    RGBA colour5;
-    RGBA colour6;
+struct SegmentColours {
+    RGBA c1;
+    RGBA c2;
+    RGBA c3;
+    RGBA c4;
+    RGBA c5;
+    RGBA c6;
 
 };
 
-std::vector<SegmentArea> segmentAreas;
-std::vector<SegmentProperty> segmentProps;
+struct Segment {
+    float r, theta, x, y;
+    float area;
+    float density;
+};
 
 
-int num_points = 300;
+int num_points = 900;
 float inner_radius = .39;
 float outer_radius = 40;
 
+std::vector<SegmentVertices> segmentVertices;
+std::vector<SegmentColours> segmentColours;
+std::vector<Segment> segment;
+std::vector<Segment> newSegment;
+
+
 int
-        CurrentWidth = 800,
-        CurrentHeight = 800,
+        CurrentWidth = 1000,
+        CurrentHeight = 1000,
         WindowHandle = 0;
 
 unsigned FrameCount = 0;
@@ -93,6 +102,8 @@ void DestroyShaders(void);
 
 void PrintPoints();
 
+void MapDensityToColour();
+
 int main(int argc, char *argv[]) {
     Initialize(argc, argv);
 
@@ -104,65 +115,82 @@ int main(int argc, char *argv[]) {
 
 void Initialize(int argc, char *argv[]) {
 
+    segmentVertices.reserve(num_points*num_points);
+    segmentColours.reserve(num_points*num_points);
+    segment.reserve(num_points*num_points);
+    newSegment.reserve(num_points*num_points);
+
+    srand (time(NULL));
+
     // populate points
     float theta_step = 2 * M_PI / num_points;
     float theta_step_2 = theta_step / 2;
     float radius_step = ( outer_radius - inner_radius ) / num_points;
     float radius_step_2 = radius_step / 2;
-    for (size_t r = 0; r < num_points; r++) {
 
-        float radius = inner_radius + (r * radius_step) + radius_step_2;
+    for (size_t t = 0; t < num_points; t++) {
 
-        for (size_t t = 0; t < num_points; t++) {
+        float theta = t * theta_step;
 
-            float theta = t * theta_step;
+        for (size_t r = 0; r < num_points; r++) {
 
-            SegmentArea pt;
-            pt.coord1.x = (radius - radius_step_2) * cos(theta - theta_step_2);
-            pt.coord1.y = (radius - radius_step_2) * sin(theta - theta_step_2);
-            pt.coord1.z = 0.0f;
-            pt.coord1.w = 1.0f;
-            pt.coord2.x = (radius + radius_step_2) * cos(theta - theta_step_2);
-            pt.coord2.y = (radius + radius_step_2) * sin(theta - theta_step_2);
-            pt.coord2.z = 0.0f;
-            pt.coord2.w = 1.0f;
-            pt.coord3.x = (radius + radius_step_2) * cos(theta + theta_step_2);
-            pt.coord3.y = (radius + radius_step_2) * sin(theta + theta_step_2);
-            pt.coord3.z = 0.0f;
-            pt.coord3.w = 1.0f;
-            pt.coord4.x = (radius - radius_step_2) * cos(theta - theta_step_2);
-            pt.coord4.y = (radius - radius_step_2) * sin(theta - theta_step_2);
-            pt.coord4.z = 0.0f;
-            pt.coord4.w = 1.0f;
-            pt.coord5.x = (radius - radius_step_2) * cos(theta + theta_step_2);
-            pt.coord5.y = (radius - radius_step_2) * sin(theta + theta_step_2);
-            pt.coord5.z = 0.0f;
-            pt.coord5.w = 1.0f;
-            pt.coord6.x = (radius + radius_step_2) * cos(theta + theta_step_2);
-            pt.coord6.y = (radius + radius_step_2) * sin(theta + theta_step_2);
-            pt.coord6.z = 0.0f;
-            pt.coord6.w = 1.0f;
+            float radius = inner_radius + (r * radius_step) + radius_step_2;
 
-            segmentAreas.push_back(pt);
+            Segment s;
+            s.r = radius;
+            s.theta = theta;
+            s.x = radius * cos(theta);
+            s.y = radius * sin(theta);
+            s.area = 1;
+            s.density = float(rand() % 64) / 255;
+            segment.push_back(s);
+            newSegment.push_back(s);
 
-            SegmentProperty sp;
-            sp.colour1.r = float(rand() % 256) / 255;
-            sp.colour1.g = sp.colour1.r;
-            sp.colour1.b = sp.colour1.r;
-            sp.colour1.a = 1.0f;
-            sp.colour2 = sp.colour1;
-            sp.colour3 = sp.colour1;
-            sp.colour4 = sp.colour1;
-            sp.colour5 = sp.colour1;
-            sp.colour6 = sp.colour1;
-            segmentProps.push_back(sp);
+            SegmentVertices sv;
+            sv.v1.x = (radius - radius_step_2) * cos(theta - theta_step_2);
+            sv.v1.y = (radius - radius_step_2) * sin(theta - theta_step_2);
+            sv.v1.z = 0.0f;
+            sv.v1.w = 1.0f;
+            sv.v2.x = (radius + radius_step_2) * cos(theta - theta_step_2);
+            sv.v2.y = (radius + radius_step_2) * sin(theta - theta_step_2);
+            sv.v2.z = 0.0f;
+            sv.v2.w = 1.0f;
+            sv.v3.x = (radius + radius_step_2) * cos(theta + theta_step_2);
+            sv.v3.y = (radius + radius_step_2) * sin(theta + theta_step_2);
+            sv.v3.z = 0.0f;
+            sv.v3.w = 1.0f;
+            sv.v4.x = (radius - radius_step_2) * cos(theta - theta_step_2);
+            sv.v4.y = (radius - radius_step_2) * sin(theta - theta_step_2);
+            sv.v4.z = 0.0f;
+            sv.v4.w = 1.0f;
+            sv.v5.x = (radius - radius_step_2) * cos(theta + theta_step_2);
+            sv.v5.y = (radius - radius_step_2) * sin(theta + theta_step_2);
+            sv.v5.z = 0.0f;
+            sv.v5.w = 1.0f;
+            sv.v6.x = (radius + radius_step_2) * cos(theta + theta_step_2);
+            sv.v6.y = (radius + radius_step_2) * sin(theta + theta_step_2);
+            sv.v6.z = 0.0f;
+            sv.v6.w = 1.0f;
+            segmentVertices.push_back(sv);
+
+            SegmentColours sc;
+            sc.c1.r = s.density;
+            sc.c1.g = sc.c1.r;
+            sc.c1.b = sc.c1.r;
+            sc.c1.a = 1.0f;
+            sc.c2 = sc.c1;
+            sc.c3 = sc.c1;
+            sc.c4 = sc.c1;
+            sc.c5 = sc.c1;
+            sc.c6 = sc.c1;
+            segmentColours.push_back(sc);
         }
     }
 
     fprintf(
             stderr,
-            "INFO: segmentAreas.size(): %d\n",
-            (unsigned) segmentAreas.size()
+            "INFO: segmentVertices.size(): %d\n",
+            (unsigned) segmentVertices.size()
     );
 
 
@@ -238,6 +266,56 @@ GLuint programID;
 GLuint MatrixID;
 glm::mat4 MVP;
 
+void CalcTotalMass() {
+    float mass = 0;
+    for (size_t i = 0; i < segment.size(); i ++ ) {
+        mass += segment[i].density * segment[i].area;
+    }
+    fprintf(stdout, "INFO: Total mass: %f\n", mass );
+}
+
+void ApplyStellarGravity() {
+
+
+    for (size_t t = 0; t < num_points; t++) {
+
+        for (size_t r = 1; r < num_points-1; r++) {
+
+            size_t i = (t * num_points) + r;
+            size_t n[8];
+            n[0] = (t * num_points) + r - 1;
+            n[1] = (((t+1)%num_points) * num_points) + r - 1;
+            n[2] = (((t+1)%num_points) * num_points) + r;
+            n[3] = (((t+1)%num_points) * num_points) + r + 1;
+            n[4] = (t * num_points) + r + 1;
+            n[5] = (((t+num_points-1)%num_points) * num_points) + r - 1;
+            n[6] = (((t+num_points-1)%num_points) * num_points) + r;
+            n[7] = (((t+num_points-1)%num_points) * num_points) + r + 1;
+
+            // radial component
+            float d = ( 0.707 * segment[n[3]].density + segment[n[4]].density + 0.707 * segment[n[5]].density )
+                    - ( 0.707 * segment[n[1]].density + segment[n[0]].density + 0.707 * segment[n[7]].density );
+
+            newSegment[i].density -= d;
+            if ( d > 0 ) {
+                newSegment[n[4]].density += d;
+            } else {
+                newSegment[n[0]].density += d;
+            }
+
+            // angular component
+            d = ( 0.707 * segment[n[3]].density + segment[n[2]].density + 0.707 * segment[n[5]].density )
+                      - ( 0.707 * segment[n[1]].density + segment[n[6]].density + 0.707 * segment[n[7]].density );
+
+            newSegment[i].density -= d;
+            if ( d > 0 ) {
+                newSegment[n[6]].density += d;
+            } else {
+                newSegment[n[2]].density += d;
+            }
+        }
+    }
+}
 
 void RenderFunction(void) {
     ++FrameCount;
@@ -252,47 +330,43 @@ void RenderFunction(void) {
     glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &MVP[0][0]);
 
 
-    glDrawArrays(GL_TRIANGLES, 0, segmentAreas.size()*6);
+    glDrawArrays(GL_TRIANGLES, 0, segmentVertices.size()*6);
 
     glFlush();
     glutSwapBuffers();
 
-    SegmentProperty pt = segmentProps[segmentProps.size() - 1];
-    pt.colour1.r = segmentProps[0].colour1.r;
-    pt.colour1.g = segmentProps[0].colour1.g;
-    pt.colour1.b = segmentProps[0].colour1.b;
-    pt.colour2 = segmentProps[0].colour1;
-    pt.colour3 = segmentProps[0].colour1;
-    pt.colour4 = segmentProps[0].colour1;
-    pt.colour5 = segmentProps[0].colour1;
-    pt.colour6 = segmentProps[0].colour1;
-    segmentProps[segmentProps.size() - 1] = pt;
+    ApplyStellarGravity();
 
-    for (int i = 0; i < segmentProps.size() - 1; i++) {
-        SegmentProperty pt = segmentProps[i];
-        pt.colour1.r = segmentProps[i + 1].colour1.r;
-        pt.colour1.g = segmentProps[i + 1].colour1.g;
-        pt.colour1.b = segmentProps[i + 1].colour1.b;
-        pt.colour2 = segmentProps[i + 1].colour1;
-        pt.colour3 = segmentProps[i + 1].colour1;
-        pt.colour4 = segmentProps[i + 1].colour1;
-        pt.colour5 = segmentProps[i + 1].colour1;
-        pt.colour6 = segmentProps[i + 1].colour1;
-        segmentProps[i] = pt;
-    }
+    segment = newSegment;
+
+    MapDensityToColour();
 
     glBindBuffer(GL_ARRAY_BUFFER, VboAreaId);
-    glBufferData(GL_ARRAY_BUFFER, segmentAreas.size() * sizeof(SegmentArea), &segmentAreas[0], GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, segmentVertices.size() * sizeof(SegmentVertices), &segmentVertices[0], GL_STATIC_DRAW);
     glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(XY), 0);
     glEnableVertexAttribArray(1);
 
     glBindBuffer(GL_ARRAY_BUFFER, VboPropertyId);
-    glBufferData(GL_ARRAY_BUFFER, segmentProps.size() * sizeof(SegmentProperty), &segmentProps[0], GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, segmentColours.size() * sizeof(SegmentColours), &segmentColours[0], GL_STATIC_DRAW);
     glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(RGBA), 0);
     glEnableVertexAttribArray(0);
 
+    CalcTotalMass();
 
+}
 
+void MapDensityToColour() {
+    for (int i = 0; i < segmentColours.size(); i++) {
+        SegmentColours* scp = &segmentColours[i];
+        scp->c1.r = segment[i].density;
+        scp->c1.g = scp->c1.r;
+        scp->c1.b = scp->c1.r;
+        scp->c2 = scp->c1;
+        scp->c3 = scp->c1;
+        scp->c4 = scp->c1;
+        scp->c5 = scp->c1;
+        scp->c6 = scp->c1;
+    }
 }
 
 void IdleFunction(void) {
@@ -334,17 +408,15 @@ void CreateVBO(void) {
 
     glGenBuffers(1, &VboAreaId);
     glBindBuffer(GL_ARRAY_BUFFER, VboAreaId);
-    glBufferData(GL_ARRAY_BUFFER, segmentAreas.size() * sizeof(SegmentArea), &segmentAreas[0], GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, segmentVertices.size() * sizeof(SegmentVertices), &segmentVertices[0], GL_STATIC_DRAW);
     glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(XY), 0);
     glEnableVertexAttribArray(0);
 
     glGenBuffers(1, &VboPropertyId);
     glBindBuffer(GL_ARRAY_BUFFER, VboPropertyId);
-    glBufferData(GL_ARRAY_BUFFER, segmentProps.size() * sizeof(SegmentProperty), &segmentProps[0], GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, segmentColours.size() * sizeof(SegmentColours), &segmentColours[0], GL_STATIC_DRAW);
     glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(RGBA), 0);
     glEnableVertexAttribArray(1);
-
-
 
     ErrorCheckValue = glGetError();
     if (ErrorCheckValue != GL_NO_ERROR) {
@@ -423,11 +495,11 @@ void DestroyShaders(void) {
 }
 
 void PrintPoints() {
-    for (int i = 0; i < segmentAreas.size(); i++) {
-        SegmentArea pt = segmentAreas[i];
+    for (int i = 0; i < segmentVertices.size(); i++) {
+        SegmentVertices pt = segmentVertices[i];
         fprintf(stdout,
                 "%d:([%f,%f],[%f,%f],[%f,%f]) ",
-                i, pt.coord1.x, pt.coord1.y, pt.coord2.x, pt.coord2.y, pt.coord3.x, pt.coord3.y);
+                i, pt.v1.x, pt.v1.y, pt.v2.x, pt.v2.y, pt.v3.x, pt.v3.y);
     }
     fprintf(stdout, "\n");
 }
