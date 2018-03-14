@@ -66,7 +66,7 @@ struct Segment {
 };
 
 #define G 6.6e-11
-int levels = 5;
+int levels = 6;
 int num_points = pow(2, levels);
 double AU = 1.49e08;
 double inner_radius =  0.39 * AU;
@@ -80,6 +80,7 @@ double stellar_mass = M_SUN;
 double escape_mass = 0;
 
 #define STAR
+#define SELF
 
 std::vector<SegmentVertices> segmentVertices;
 std::vector<SegmentColours> segmentColours;
@@ -168,8 +169,11 @@ void Initialize(int argc, char *argv[]) {
             s.area = 2.0 * radius * radius_step * theta_step;
             s.m = (double)(rand()%50) * s.area; //double(rand() % 100000)/100000.0f * max_segment_mass / 1000.0f;
             s.vr = 0;
-            s.vt = 0;
             s.vt = sqrt(G*stellar_mass/s.r);
+
+            if (rand()%2 == 1) {
+                s.vt *= -1;
+            }
 
             if ( r > 0 ) {
                 s.n[0] = (t * num_points) + r - 1;
