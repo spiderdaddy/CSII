@@ -66,7 +66,7 @@ struct Segment {
 };
 
 #define G 6.6e-11
-int levels = 6;
+int levels = 5;
 int num_points = pow(2, levels);
 double AU = 1.49e08;
 double inner_radius =  0.39 * AU;
@@ -78,6 +78,8 @@ double outer_radius = 40.00 * AU;
 
 double stellar_mass = M_SUN;
 double escape_mass = 0;
+
+#define STAR
 
 std::vector<SegmentVertices> segmentVertices;
 std::vector<SegmentColours> segmentColours;
@@ -164,13 +166,10 @@ void Initialize(int argc, char *argv[]) {
             s.x = radius * cos(theta);
             s.y = radius * sin(theta);
             s.area = 2.0 * radius * radius_step * theta_step;
-            s.m = (double)(rand()%num_points) / 1 * M_EARTH * s.area; //double(rand() % 100000)/100000.0f * max_segment_mass / 1000.0f;
+            s.m = (double)(rand()%50) * s.area; //double(rand() % 100000)/100000.0f * max_segment_mass / 1000.0f;
             s.vr = 0;
             s.vt = 0;
-            double v = 1e6*sqrt(G*s.m/s.r);
-            if (v > 0) {
-                s.vt = v / (2.0 * M_PI * s.r) ;
-            }
+            s.vt = sqrt(G*stellar_mass/s.r);
 
             if ( r > 0 ) {
                 s.n[0] = (t * num_points) + r - 1;
@@ -319,8 +318,8 @@ void CalcSystemMass() {
         pr += segment[i].m * segment[i].vr;
         pt += segment[i].m * segment[i].vt;
     }
-    fprintf(stdout, "INFO: Stellar Mass: %.0f Disk Mass: %.0f : Total mass: %.0f, pr = %.0f, pt = %18.0f\n",
-            stellar_mass, disk_mass, stellar_mass+disk_mass, pr, pt );
+    fprintf(stdout, "INFO: Stellar Mass: %.8e Disk Mass: %.8e : Escape Mass: %.8e Total mass: %.8e, pr = %.8e, pt = %.8e\n",
+            stellar_mass, disk_mass, escape_mass, stellar_mass+disk_mass, pr, pt );
 }
 
 #define AFAC 0.25f
@@ -332,14 +331,18 @@ void ApplyBruteForceGravity() {
     for (size_t r = 0; r < num_points; r++) {
         for (size_t t = 0; t < num_points; t++) {
 
-                size_t i1 = (t * num_points) + r;
+            size_t i1 = (t * num_points) + r;
 
-            newSegment[i1].ar = 0;//-1e15 * stellar_mass * G / (segment[i1].r * segment[i1].r);
+#ifdef STAR
+            newSegment[i1].ar = -1.0 * stellar_mass * G / (segment[i1].r * segment[i1].r);
+#else
+            newSegment[i1].ar = 0;
+#endif
             newSegment[i1].at = 0;
 
-/*
-            for (size_t st = 0; st < num_points; st++) {
+#ifdef SELF
                 for (size_t sr = 0; sr < num_points; sr++) {
+                    for (size_t st = 0; st < num_points; st++) {
 
                     size_t i2 = (st * num_points) + sr;
 
@@ -355,14 +358,14 @@ void ApplyBruteForceGravity() {
                             a = G * segment[i2].m / f;
                         }
                         double dt = segment[i1].theta - alpha;
-                        newSegment[i1].at += a * sin(dt);
-                        newSegment[i1].ar += a * cos(dt);
-                        //fprintf( stdout, "INFO: %f, %f, %f, %f, %f, %f\n", x, y, d, alpha, f, a );
+                        newSegment[i1].at += a * sin(dt) ; // / (2.0 * M_PI * newSegment[i1].r);
+                        newSegment[i1].ar += a * cos(dt) ;
+                        //fprintf(1e-22 *  stdout, "INFO: %f, %f, %f, %f, %f, %f\n", x, y, d, alpha, f, a );
 
                     }
                 }
             }
-*/
+#endif
         }
     }
 
@@ -734,23 +737,11 @@ void RenderFunction(void) {
 
 void MapSegmentToColor() {
 
-    double d_max = 0;
-    double d_min = stellar_mass;
-
-    for (int i = 0; i < segment.size(); i++) {
-        double d = segment[i].m/segment[i].area;
-        if( d > d_max ) {
-            d_max = d;
-        }
-        if ( d < d_min ) {
-            d_min = d;
-        }
-    }
-    double d_range = d_max - d_min;
+    double d_max = 250;
 
     for (int i = 0; i < segmentColours.size(); i++) {
         SegmentColours* scp = &segmentColours[i];
-        scp->c1.r = (float)((segment[i].m/segment[i].area-d_min)/d_range);
+        scp->c1.r = min((float)((segment[i].m/segment[i].area)/250), 1.0f);
         scp->c1.g = scp->c1.r;
         scp->c1.b = scp->c1.r;
         scp->c2 = scp->c1;
