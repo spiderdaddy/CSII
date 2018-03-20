@@ -6,6 +6,9 @@ include_directories( BEFORE common )
 
 add_executable(csii
         main.cpp
+        graphics.cpp
+        gravity.cpp
+        disk.cpp
         #common/controls.cpp
         common/objloader.cpp
         common/quaternion_utils.cpp
