@@ -87,14 +87,14 @@ void RenderFunction(void) {
     std::vector<SegmentVertices> segmentVertices = getSegmentVertices();
     glBindBuffer(GL_ARRAY_BUFFER, VboAreaId);
     glBufferData(GL_ARRAY_BUFFER, segmentVertices.size() * sizeof(SegmentVertices), &segmentVertices[0], GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(XY), 0);
+    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(XYZW_GL), 0);
     glEnableVertexAttribArray(1);
 
     MapSegmentToColor();
     std::vector<SegmentColours> segmentColours = getSegmentColours();
     glBindBuffer(GL_ARRAY_BUFFER, VboPropertyId);
     glBufferData(GL_ARRAY_BUFFER, segmentColours.size() * sizeof(SegmentColours), &segmentColours[0], GL_STATIC_DRAW);
-    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(RGBA), 0);
+    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(RGBA_GL), 0);
     glEnableVertexAttribArray(0);
 
     glDrawArrays(GL_TRIANGLES, 0, segmentVertices.size()*6);
@@ -158,13 +158,13 @@ void CreateVBO(void) {
     glGenBuffers(1, &VboAreaId);
     glBindBuffer(GL_ARRAY_BUFFER, VboAreaId);
     glBufferData(GL_ARRAY_BUFFER, segmentVertices.size() * sizeof(SegmentVertices), &segmentVertices[0], GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(XY), 0);
+    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(XYZW_GL), 0);
     glEnableVertexAttribArray(0);
 
     glGenBuffers(1, &VboPropertyId);
     glBindBuffer(GL_ARRAY_BUFFER, VboPropertyId);
     glBufferData(GL_ARRAY_BUFFER, segmentColours.size() * sizeof(SegmentColours), &segmentColours[0], GL_STATIC_DRAW);
-    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(RGBA), 0);
+    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(GL_RGBA), 0);
     glEnableVertexAttribArray(1);
 
     ErrorCheckValue = glGetError();

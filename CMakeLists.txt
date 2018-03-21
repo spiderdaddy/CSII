@@ -17,6 +17,6 @@ add_executable(csii
         #common/text2D.cpp
         #common/texture.cpp
         #common/vboindexer.cpp
-        )
+        GravityProvider.cpp GravityProvider.h)
 
 target_link_libraries(csii glut GL GLEW GLU )

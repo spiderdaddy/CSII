@@ -14,39 +14,48 @@
 #define INNER_RADIUS 0.5
 #define OUTER_RADIUS 1.5
 
-struct XY {
+struct XYZW_GL {
     float x, y, z, w;
 };
-struct RGBA {
+
+struct RGBA_GL {
     float r, g, b, a;
 };
+
 struct SegmentVertices {
-    XY v1;
-    XY v2;
-    XY v3;
-    XY v4;
-    XY v5;
-    XY v6;
+    XYZW_GL v1;
+    XYZW_GL v2;
+    XYZW_GL v3;
+    XYZW_GL v4;
+    XYZW_GL v5;
+    XYZW_GL v6;
 
 };
 struct SegmentColours {
-    RGBA c1;
-    RGBA c2;
-    RGBA c3;
-    RGBA c4;
-    RGBA c5;
-    RGBA c6;
+    RGBA_GL c1;
+    RGBA_GL c2;
+    RGBA_GL c3;
+    RGBA_GL c4;
+    RGBA_GL c5;
+    RGBA_GL c6;
 
 };
+
+struct Polar {
+    double r;
+    double t;
+};
+
 struct P {
     double v, m;
 };
+
 struct Segment {
     double r, theta, x, y;
     double vr, vt;
     double ar, at;
     double area;
-    double m;
+    double density;
     long n[8] = { -1, -1, -1, -1, -1, -1, -1, -1}; //nearest neighbours
     std::vector<P> pr;
     std::vector<P> pt;

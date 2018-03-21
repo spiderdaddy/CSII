@@ -3,6 +3,8 @@
 //
 
 #include <vector>
+#include <cstdlib>
+#include <algorithm>
 
 #include <glm/glm.hpp>
 
@@ -13,15 +15,20 @@
 
 double r2 = 1 / std::sqrt(2);
 
-
-
-void ApplyBruteForceGravity(
+void initialiseAcceleration(
         std::vector<Segment> *pNewSegment,
-        std::vector<Segment> *pSegment,
-        double *stellar_mass,
-        double *escape_mass
-) {
+        std::vector<Segment> *pSegment ) {
+    std::vector<Segment>& newSegment = *pNewSegment;
+    std::vector<Segment>& segment = *pSegment;
 
+    std::for_each(newSegment.begin(), newSegment.end(), [](Segment &el) { el.ar = 0; el.at = 0; });
+    std::for_each(segment.begin(), segment.end(), [](Segment &el) { el.ar = 0; el.at = 0; });
+}
+
+void calculateBruteForceSelfGravityCartesian(
+        std::vector<Segment> *pNewSegment,
+        std::vector<Segment> *pSegment
+) {
     std::vector<Segment>& newSegment = *pNewSegment;
     std::vector<Segment>& segment = *pSegment;
 
@@ -31,16 +38,11 @@ void ApplyBruteForceGravity(
 
             std::size_t i1 = (t * NUM_RADIAL_CELLS) + r;
 
-#ifdef STAR
-            newSegment[i1].ar = -1.0 * *stellar_mass * G / (segment[i1].r * segment[i1].r);
-#else
-            newSegment[i1].ar = 0;
-#endif
-            newSegment[i1].at = 0;
+            double ar = 0;
+            double at = 0;
 
-#ifdef SELF
-                for (std::size_t sr = 0; sr < NUM_RADIAL_CELLS; sr++) {
-                    for (std::size_t st = 0; st < NUM_AZIMUTHAL_CELLS; st++) {
+            for (std::size_t sr = 0; sr < NUM_RADIAL_CELLS; sr++) {
+                for (std::size_t st = 0; st < NUM_AZIMUTHAL_CELLS; st++) {
 
                     std::size_t i2 = (st * NUM_RADIAL_CELLS) + sr;
 
@@ -53,27 +55,63 @@ void ApplyBruteForceGravity(
                         double f = d * d;
                         double a = 0;
                         if (f > 0) {
-                            a = G * segment[i2].m / f;
+                            a = G * segment[i2].density * segment[i2].area / f;
                         }
                         double dt = segment[i1].theta - alpha;
-                        newSegment[i1].at += a * sin(dt) ; // / (2.0 * M_PI * newSegment[i1].r);
+                        newSegment[i1].at += a * sin(dt) ;
                         newSegment[i1].ar += a * cos(dt) ;
-                        //fprintf(1e-22 *  stdout, "INFO: %f, %f, %f, %f, %f, %f\n", x, y, d, alpha, f, a );
-
                     }
                 }
             }
-#endif
+            newSegment[i1].ar += ar;
+            newSegment[i1].at += at;
         }
     }
+}
+
+void calculateStellarGravity(
+        std::vector<Segment> *pNewSegment,
+        std::vector<Segment> *pSegment,
+        double *stellar_mass
+) {
+    std::vector<Segment>& newSegment = *pNewSegment;
+    std::vector<Segment>& segment = *pSegment;
+
+    // Calculate acceleration for all points
+    for (std::size_t r = 0; r < NUM_RADIAL_CELLS; r++) {
+        for (std::size_t t = 0; t < NUM_AZIMUTHAL_CELLS; t++) {
+
+            std::size_t i1 = (t * NUM_RADIAL_CELLS) + r;
+
+            newSegment[i1].ar += -1.0 * *stellar_mass * G / (segment[i1].r * segment[i1].r);
+            // newSegment[i1].at += 0;
+        }
+    }
+}
+
+
+void ApplyAcceleration(
+        std::vector<Segment> *pNewSegment
+) {
+
+    std::vector<Segment> &newSegment = *pNewSegment;
 
     // apply acceleration to all velocities
-    for ( int i = 0; i < newSegment.size(); i++) {
+    for (int i = 0; i < newSegment.size(); i++) {
         newSegment[i].vr += newSegment[i].ar;
         newSegment[i].vt += newSegment[i].at;
         newSegment[i].pr.clear();
         newSegment[i].pt.clear();
     }
+
+}
+
+void MoveMass(
+        std::vector<Segment> *pNewSegment,
+        double *stellar_mass,
+        double *escape_mass
+) {
+    std::vector<Segment>& newSegment = *pNewSegment;
 
     // populate points
     double radius_step = ( OUTER_RADIUS - INNER_RADIUS ) / NUM_RADIAL_CELLS;
@@ -139,8 +177,8 @@ void ApplyBruteForceGravity(
 
             // area 1
             int i2 = n[n1];
-            double dm = newSegment[i1].m * a1 / newSegment[i1].area;
-            double m1 = newSegment[i1].m;
+            double dm = newSegment[i1].density * a1;
+            double m1 = newSegment[i1].density * newSegment[i1].area;
             if ( i2 < 0 ) {
                 if (n1 == 0 ) {
                     *stellar_mass += dm;
@@ -154,7 +192,7 @@ void ApplyBruteForceGravity(
 
             // area 2
             i2 = n[n2];
-            dm = newSegment[i1].m * a2 / newSegment[i1].area;
+            dm = newSegment[i1].density * a2;
             if ( i2 < 0 ) {
                 if (n2 == 1 || n2 == 7 ) {
                     *stellar_mass += dm;
@@ -172,7 +210,7 @@ void ApplyBruteForceGravity(
 
             // area 3
             i2 = n[n3];
-            dm = newSegment[i1].m * a3 / newSegment[i1].area;
+            dm = newSegment[i1].density * a3;
             newSegment[i2].pt.push_back({newSegment[i1].vt, dm});
             m1 = glm::max(0.0, m1 - dm);
 
@@ -191,7 +229,7 @@ void ApplyBruteForceGravity(
         if ( m > 0 ) {
             newSegment[i].vt = p / m;
         }
-        newSegment[i].m = m;
+        newSegment[i].density = m / newSegment[i].area;
         p = 0.0, m = 0.0;
         for( auto &it : newSegment[i].pr ) {
             p += it.m * it.v;
@@ -201,10 +239,46 @@ void ApplyBruteForceGravity(
         if ( m > 0 ) {
             newSegment[i].vr = p / m;
         }
-        newSegment[i].m += m;
+        newSegment[i].density += m / newSegment[i].area;
     }
 
 }
+
+void ApplyBruteForceGravity(
+        std::vector<Segment> *newSegment,
+        std::vector<Segment> *segment,
+        double *stellar_mass,
+        double *escape_mass
+) {
+
+    initialiseAcceleration(
+            newSegment,
+            segment
+    );
+
+    calculateBruteForceSelfGravityCartesian(
+            newSegment,
+            segment
+    );
+
+    calculateStellarGravity(
+            newSegment,
+            segment,
+            stellar_mass
+    );
+
+    ApplyAcceleration(
+            newSegment
+    );
+
+    MoveMass(
+            newSegment,
+            stellar_mass,
+            escape_mass
+    );
+
+    }
+
 
 /*
 #define AFAC 0.25f

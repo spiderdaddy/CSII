@@ -8,9 +8,10 @@
 #include <iostream>
 #include <vector>
 #include <fstream>
+#include <algorithm>
 
 #include <glm/common.hpp>
-#include <algorithm>
+
 
 #include "disk.h"
 #include "gravity.h"
@@ -74,7 +75,7 @@ void InitializeDisk() {
             s.x = radius * cos(theta);
             s.y = radius * sin(theta);
             s.area = ( radius_upper - radius_lower ) * theta_step;
-            s.m = *dIterator * s.area;
+            s.density = *dIterator;
             dIterator++;
             s.vr = 0;
             s.vt = sqrt(G * stellar_mass / s.r);
@@ -129,7 +130,7 @@ void InitializeDisk() {
             segmentVertices.push_back(sv);
 
             SegmentColours sc;
-            sc.c1.r = s.m;
+            sc.c1.r = 0;
             sc.c1.g = sc.c1.r;
             sc.c1.b = sc.c1.r;
             sc.c1.a = 1.0f;
@@ -139,6 +140,7 @@ void InitializeDisk() {
             sc.c5 = sc.c1;
             sc.c6 = sc.c1;
             segmentColours.push_back(sc);
+
         }
 
         radius *= r_ratio;
@@ -150,6 +152,7 @@ void InitializeDisk() {
             (unsigned) segmentVertices.size()
     );
 
+    MapSegmentToColor();
     //PrintPoints();
     CalcSystemMass();
 }
@@ -170,9 +173,10 @@ void CalcSystemMass() {
     double pr = 0;
     double pt = 0;
     for (std::size_t i = 0; i < segment.size(); i++) {
-        disk_mass += segment[i].m;
-        pr += segment[i].m * segment[i].vr;
-        pt += segment[i].m * segment[i].vt;
+        double m = segment[i].density * segment[i].area;
+        disk_mass += m;
+        pr += m * segment[i].vr;
+        pt += m * segment[i].vt;
     }
     fprintf(stdout,
             "INFO: Stellar Mass: %.8e Disk Mass: %.8e : Escape Mass: %.8e Total mass: %.8e, pr = %.8e, pt = %.8e\n",
@@ -185,8 +189,8 @@ void MapSegmentToColor() {
 
     for (int i = 0; i < segmentColours.size(); i++) {
         SegmentColours *scp = &segmentColours[i];
-        scp->c1.r = std::min( std::abs( std::min((float)(segment[i].m / segment[i].area ), 0.0f) ), 1.0f );
-        scp->c1.g = std::min( std::abs( std::max((float)(segment[i].m / segment[i].area / 3.0f), 0.0f) ), 1.0f );
+        scp->c1.r = std::min( std::abs( std::min((float)segment[i].density, 0.0f) ), 1.0f );
+        scp->c1.g = std::min( std::abs( std::max((float)segment[i].density / 3.0f, 0.0f) ), 1.0f );
         scp->c1.b = 0.15f;
         scp->c2 = scp->c1;
         scp->c3 = scp->c1;
