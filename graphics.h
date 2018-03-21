@@ -7,8 +7,6 @@
 
 void RenderFunction(void);
 
-void MapSegmentToColor();
-
 void IdleFunction(void);
 
 void TimerFunction(int);

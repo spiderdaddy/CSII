@@ -2,11 +2,13 @@
 // Created by lf on 20/03/18.
 //
 
+#include <cstdlib>
 #include <cstring>
 #include <cmath>
 #include <iostream>
-
 #include <vector>
+#include <glm/common.hpp>
+
 #include "disk.h"
 #include "gravity.h"
 
@@ -23,11 +25,10 @@ std::vector<Segment> newSegment;
 
 std::vector<SegmentVertices> getSegmentVertices() { return segmentVertices; }
 std::vector<SegmentColours> getSegmentColours() { return segmentColours; }
-std::vector<Segment> getSegment(){ return segment; }
-std::vector<Segment> getNewSegment(){return newSegment; }
+std::vector<Segment> *getSegment(){ return &segment; }
+std::vector<Segment> *getNewSegment(){return &newSegment; }
 double *getStellarMass() { return &stellar_mass; }
 double *getEscapeMass() { return &escape_mass;}
-void swapSegments() { segment = newSegment; }
 
 
 void InitializeDisk() {
@@ -160,3 +161,26 @@ void CalcSystemMass() {
     fprintf(stdout, "INFO: Stellar Mass: %.8e Disk Mass: %.8e : Escape Mass: %.8e Total mass: %.8e, pr = %.8e, pt = %.8e\n",
             stellar_mass, disk_mass, escape_mass, stellar_mass+disk_mass, pr, pt );
 }
+
+void MapSegmentToColor() {
+
+    double d_max = 250;
+
+    for (int i = 0; i < segmentColours.size(); i++) {
+        SegmentColours* scp = &segmentColours[i];
+        scp->c1.r = glm::min((float)((segment[i].m / segment[i].area) / 250), 1.0f);
+        scp->c1.g = scp->c1.r;
+        scp->c1.b = scp->c1.r;
+        scp->c2 = scp->c1;
+        scp->c3 = scp->c1;
+        scp->c4 = scp->c1;
+        scp->c5 = scp->c1;
+        scp->c6 = scp->c1;
+    }
+}
+
+void swapSegments() {
+
+    segment = newSegment;
+}
+

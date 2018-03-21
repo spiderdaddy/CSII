@@ -8,8 +8,8 @@
 #include "disk.h"
 
 void ApplyBruteForceGravity(
-        std::vector<Segment> newSegment,
-        std::vector<Segment> segment,
+        std::vector<Segment> *newSegment,
+        std::vector<Segment> *segment,
         double *stellar_mass,
         double *escape_mass
 );

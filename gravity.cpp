@@ -2,9 +2,10 @@
 // Created by lf on 20/03/18.
 //
 
+#include <vector>
+
 #include <glm/glm.hpp>
 
-#include <vector>
 #include "gravity.h"
 
 
@@ -15,11 +16,14 @@ double r2 = 1 / std::sqrt(2);
 
 
 void ApplyBruteForceGravity(
-        std::vector<Segment> newSegment,
-        std::vector<Segment> segment,
+        std::vector<Segment> *pNewSegment,
+        std::vector<Segment> *pSegment,
         double *stellar_mass,
         double *escape_mass
 ) {
+
+    std::vector<Segment>& newSegment = *pNewSegment;
+    std::vector<Segment>& segment = *pSegment;
 
     // Calculate acceleration for all points
     for (std::size_t r = 0; r < NUM_RADIAL_CELLS; r++) {

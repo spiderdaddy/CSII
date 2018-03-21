@@ -2,18 +2,19 @@
 // Created by lf on 20/03/18.
 //
 
-#include <glm/glm.hpp>
-#include <GL/glew.h>
-#include <GL/freeglut.h>
 #include <cstdio>
 #include <vector>
 #include <cstring>
 
-#include "graphics.h"
+#include <GL/glew.h>
+#include <GL/freeglut.h>
 
-#include <shader.hpp>
+#include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include <shader.hpp>
+
+#include "graphics.h"
 #include "gravity.h"
 
 #define WINDOW_TITLE_PREFIX "Gravity"
@@ -72,11 +73,6 @@ void InitializeGraphics(int argc, char *argv[]) {
 
 void RenderFunction(void) {
 
-    std::vector<SegmentColours> segmentColours = getSegmentColours();
-    std::vector<SegmentVertices> segmentVertices = getSegmentVertices();
-    std::vector<Segment> segment = getSegment();
-    std::vector<Segment> newSegment = getNewSegment();
-
     ++FrameCount;
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -88,14 +84,27 @@ void RenderFunction(void) {
     // in the "MVP" uniform
     glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &MVP[0][0]);
 
+    std::vector<SegmentVertices> segmentVertices = getSegmentVertices();
+    glBindBuffer(GL_ARRAY_BUFFER, VboAreaId);
+    glBufferData(GL_ARRAY_BUFFER, segmentVertices.size() * sizeof(SegmentVertices), &segmentVertices[0], GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(XY), 0);
+    glEnableVertexAttribArray(1);
+
+    MapSegmentToColor();
+    std::vector<SegmentColours> segmentColours = getSegmentColours();
+    glBindBuffer(GL_ARRAY_BUFFER, VboPropertyId);
+    glBufferData(GL_ARRAY_BUFFER, segmentColours.size() * sizeof(SegmentColours), &segmentColours[0], GL_STATIC_DRAW);
+    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(RGBA), 0);
+    glEnableVertexAttribArray(0);
+
     glDrawArrays(GL_TRIANGLES, 0, segmentVertices.size()*6);
 
     glFlush();
     glutSwapBuffers();
 
     ApplyBruteForceGravity(
-            newSegment,
-            segment,
+            getNewSegment(),
+            getSegment(),
             getStellarMass(),
             getEscapeMass()
     );
@@ -103,39 +112,8 @@ void RenderFunction(void) {
     swapSegments();
 
     CalcSystemMass();
-
-    MapSegmentToColor();
-
-    glBindBuffer(GL_ARRAY_BUFFER, VboAreaId);
-    glBufferData(GL_ARRAY_BUFFER, segmentVertices.size() * sizeof(SegmentVertices), &segmentVertices[0], GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(XY), 0);
-    glEnableVertexAttribArray(1);
-
-    glBindBuffer(GL_ARRAY_BUFFER, VboPropertyId);
-    glBufferData(GL_ARRAY_BUFFER, segmentColours.size() * sizeof(SegmentColours), &segmentColours[0], GL_STATIC_DRAW);
-    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(RGBA), 0);
-    glEnableVertexAttribArray(0);
-
 }
 
-void MapSegmentToColor() {
-
-    double d_max = 250;
-    std::vector<SegmentColours> segmentColours = getSegmentColours();
-    std::vector<Segment> segment = getSegment();
-
-    for (int i = 0; i < segmentColours.size(); i++) {
-        SegmentColours* scp = &segmentColours[i];
-        scp->c1.r = min((float)((segment[i].m / segment[i].area) / 250), 1.0f);
-        scp->c1.g = scp->c1.r;
-        scp->c1.b = scp->c1.r;
-        scp->c2 = scp->c1;
-        scp->c3 = scp->c1;
-        scp->c4 = scp->c1;
-        scp->c5 = scp->c1;
-        scp->c6 = scp->c1;
-    }
-}
 
 void IdleFunction(void) {
     glutPostRedisplay();
@@ -170,9 +148,9 @@ void Cleanup(void) {
 
 void CreateVBO(void) {
     unsigned int ErrorCheckValue = glGetError();
+
     std::vector<SegmentVertices> segmentVertices = getSegmentVertices();
     std::vector<SegmentColours> segmentColours = getSegmentColours();
-
 
     glGenVertexArrays(1, &VaoId);
     glBindVertexArray(VaoId);

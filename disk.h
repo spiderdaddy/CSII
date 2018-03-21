@@ -6,8 +6,9 @@
 
 #include <vector>
 
-#define NUM_RADIAL_CELLS   128
-#define NUM_AZIUTHAL_CELLS 256
+#define NUM_RADIAL_CELLS   128 //128
+#define NUM_AZIUTHAL_CELLS 256 //256
+
 
 #define AU 1.49e08
 #define INNER_RADIUS (0.39*AU)
@@ -57,10 +58,12 @@ void PrintPoints();
 
 void CalcSystemMass();
 
+void MapSegmentToColor();
+
 std::vector<SegmentVertices> getSegmentVertices();
 std::vector<SegmentColours> getSegmentColours();
-std::vector<Segment> getSegment();
-std::vector<Segment> getNewSegment();
+std::vector<Segment> *getSegment();
+std::vector<Segment> *getNewSegment();
 double *getStellarMass();
 double *getEscapeMass();
 void swapSegments();
