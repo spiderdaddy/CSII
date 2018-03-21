@@ -6,13 +6,13 @@
 
 #include <vector>
 
-#define NUM_RADIAL_CELLS   128 //128
-#define NUM_AZIUTHAL_CELLS 256 //256
+#define NUM_RADIAL_CELLS   128
+#define NUM_AZIMUTHAL_CELLS 256
 
 
 #define AU 1.49e08
-#define INNER_RADIUS (0.39*AU)
-#define OUTER_RADIUS (40.00*AU)
+#define INNER_RADIUS 0.5
+#define OUTER_RADIUS 1.5
 
 struct XY {
     float x, y, z, w;
@@ -67,5 +67,7 @@ std::vector<Segment> *getNewSegment();
 double *getStellarMass();
 double *getEscapeMass();
 void swapSegments();
+
+std::vector<double> getDensities();
 
 #endif //CSII_DISK_H

@@ -27,7 +27,7 @@ void ApplyBruteForceGravity(
 
     // Calculate acceleration for all points
     for (std::size_t r = 0; r < NUM_RADIAL_CELLS; r++) {
-        for (std::size_t t = 0; t < NUM_AZIUTHAL_CELLS; t++) {
+        for (std::size_t t = 0; t < NUM_AZIMUTHAL_CELLS; t++) {
 
             std::size_t i1 = (t * NUM_RADIAL_CELLS) + r;
 
@@ -40,7 +40,7 @@ void ApplyBruteForceGravity(
 
 #ifdef SELF
                 for (std::size_t sr = 0; sr < NUM_RADIAL_CELLS; sr++) {
-                    for (std::size_t st = 0; st < NUM_AZIUTHAL_CELLS; st++) {
+                    for (std::size_t st = 0; st < NUM_AZIMUTHAL_CELLS; st++) {
 
                     std::size_t i2 = (st * NUM_RADIAL_CELLS) + sr;
 
@@ -81,13 +81,13 @@ void ApplyBruteForceGravity(
 
     // based on velocities, move the matter, conserve momentum
     for (std::size_t r = 0; r < NUM_RADIAL_CELLS; r++) {
-        for (std::size_t t = 0; t < NUM_AZIUTHAL_CELLS; t++) {
+        for (std::size_t t = 0; t < NUM_AZIMUTHAL_CELLS; t++) {
 
             std::size_t i1 = (t * NUM_RADIAL_CELLS) + r;
 
             long * n = &newSegment[i1].n[0];
 
-            double theta_step = 2 * (double)M_PI * newSegment[i1].r / NUM_AZIUTHAL_CELLS;
+            double theta_step = 2 * (double)M_PI * newSegment[i1].r / NUM_AZIMUTHAL_CELLS;
             double theta_step_2 = theta_step / 2;
             double r1 = newSegment[i1].r - radius_step_2;
             double r2 = r1 + newSegment[i1].vr;
