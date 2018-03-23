@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.9)
 project(CSII)
 set(CMAKE_CXX_STANDARD 11)
 
-include_directories( BEFORE common )
+include_directories( BEFORE common GravityProvider )
 
 add_executable(csii
         main.cpp
@@ -17,6 +17,9 @@ add_executable(csii
         #common/text2D.cpp
         #common/texture.cpp
         #common/vboindexer.cpp
-        GravityProvider.cpp GravityProvider.h)
+        GravityProvider/GravityProvider.cpp
+        GravityProvider/PolarBruteForceSelfGravityProvider.cpp
+        GravityProvider/StellarGravityProvider.cpp
+        GravityProvider/CartesianBruteForceSelfGravityProvider.cpp )
 
 target_link_libraries(csii glut GL GLEW GLU )

@@ -147,7 +147,7 @@ void InitializeDisk() {
     }
 
     fprintf(
-            stderr,
+            stdout,
             "INFO: segmentVertices.size(): %d\n",
             (unsigned) segmentVertices.size()
     );
