@@ -1,8 +1,10 @@
 
 #include <cstdlib>
 
-#include "graphics.h"
 #include "disk.h"
+#include "graphics.h"
+
+#include "QuadTree.h"
 
 #define NUM_RADIAL_CELLS 128
 #define NUM_AZIMUTHAL_CELLS 256
@@ -20,9 +22,12 @@ void Initialize(int argc, char *argv[]) {
 
 int main(int argc, char *argv[]) {
 
-    Initialize(argc, argv);
+    QuadTree qt = QuadTree(16, 16);
+    qt.printNodes();
 
-    GraphicsMainLoop();
+    //Initialize(argc, argv);
+
+    //GraphicsMainLoop();
 
     exit(EXIT_SUCCESS);
 }
