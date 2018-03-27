@@ -10,8 +10,8 @@
 
 void PolarBruteForceSelfGravityProvider::calculate() {
 
-    std::vector<Segment>& newSegment = *GravityProvider::pNewSegment;
-    std::vector<Segment>& segment = *GravityProvider::pSegment;
+    std::vector<Disk::Segment>& newSegment = *GravityProvider::pNewSegment;
+    std::vector<Disk::Segment>& segment = *GravityProvider::pSegment;
 
     // Calculate acceleration for all points
     for (std::size_t r = 0; r < GravityProvider::num_radial_cells; r++) {

@@ -14,56 +14,55 @@
 
 
 #include "disk.h"
-#include "gravity.h"
 
 
-double stellar_mass = M_SUN;
-double escape_mass = 0;
+std::vector<Disk::SegmentVertices> segmentVertices;
+std::vector<Disk::SegmentColours> segmentColours;
+std::vector<Disk::Segment> segment;
+std::vector<Disk::Segment> newSegment;
 
-std::vector<SegmentVertices> segmentVertices;
-std::vector<SegmentColours> segmentColours;
-std::vector<Segment> segment;
-std::vector<Segment> newSegment;
+std::vector<Disk::SegmentVertices> Disk::getSegmentVertices() { return segmentVertices; }
 
-std::vector<SegmentVertices> getSegmentVertices() { return segmentVertices; }
+std::vector<Disk::SegmentColours> Disk::getSegmentColours() { return segmentColours; }
 
-std::vector<SegmentColours> getSegmentColours() { return segmentColours; }
+std::vector<Disk::Segment> *Disk::getSegment() { return &segment; }
 
-std::vector<Segment> *getSegment() { return &segment; }
+std::vector<Disk::Segment> *Disk::getNewSegment() { return &newSegment; }
 
-std::vector<Segment> *getNewSegment() { return &newSegment; }
+double *Disk::getStellarMass() { return &stellar_mass; }
 
-double *getStellarMass() { return &stellar_mass; }
-
-double *getEscapeMass() { return &escape_mass; }
+double *Disk::getEscapeMass() { return &escape_mass; }
 
 
-void InitializeDisk() {
+Disk::Disk( unsigned int num_r, unsigned int num_theta, std::string filename ) {
 
-    std::vector<double> densities = getDensities();
+    num_radial_cells = num_r;
+    num_azimuthal_cells = num_theta;
+
+    std::vector<double> densities = loadDensities(filename);
 
     std::vector<double>::iterator dIterator = densities.begin();
 
-    segmentVertices.reserve(NUM_RADIAL_CELLS * NUM_AZIMUTHAL_CELLS);
-    segmentColours.reserve(NUM_RADIAL_CELLS * NUM_AZIMUTHAL_CELLS);
-    segment.reserve(NUM_RADIAL_CELLS * NUM_AZIMUTHAL_CELLS);
-    newSegment.reserve(NUM_RADIAL_CELLS * NUM_AZIMUTHAL_CELLS);
+    segmentVertices.reserve(num_radial_cells * num_azimuthal_cells);
+    segmentColours.reserve(num_radial_cells * num_azimuthal_cells);
+    segment.reserve(num_radial_cells * num_azimuthal_cells);
+    newSegment.reserve(num_radial_cells * num_azimuthal_cells);
 
     srand(time(NULL));
 
     // populate points
-    double theta_step = 2 * M_PI / NUM_AZIMUTHAL_CELLS;
+    double theta_step = 2 * M_PI / num_azimuthal_cells;
     double theta_step_2 = theta_step / 2;
 
-    double r_ratio = std::pow(OUTER_RADIUS/INNER_RADIUS, 1/(double)NUM_RADIAL_CELLS);
+    double r_ratio = std::pow(OUTER_RADIUS/INNER_RADIUS, 1/(double)num_radial_cells);
     double radius = INNER_RADIUS * sqrt(r_ratio);
 
-    for (size_t r = 0; r < NUM_RADIAL_CELLS; r++) {
+    for (size_t r = 0; r < num_radial_cells; r++) {
 
         double radius_lower = radius/sqrt(r_ratio);
         double radius_upper = radius*sqrt(r_ratio);
 
-        for (size_t t = 0; t < NUM_AZIMUTHAL_CELLS; t++) {
+        for (size_t t = 0; t < num_azimuthal_cells; t++) {
 
             double theta = t * theta_step + theta_step_2;
 
@@ -85,18 +84,18 @@ void InitializeDisk() {
             }
 
             if (r > 0) {
-                s.n[0] = ((r - 1) * NUM_AZIMUTHAL_CELLS) + t;
-                s.n[1] = ((r - 1) * NUM_AZIMUTHAL_CELLS) + ((t + 1) % NUM_AZIMUTHAL_CELLS);
-                s.n[7] = ((r - 1) * NUM_AZIMUTHAL_CELLS) + ((t + NUM_AZIMUTHAL_CELLS - 1) % NUM_AZIMUTHAL_CELLS);
+                s.n[0] = ((r - 1) * num_azimuthal_cells) + t;
+                s.n[1] = ((r - 1) * num_azimuthal_cells) + ((t + 1) % num_azimuthal_cells);
+                s.n[7] = ((r - 1) * num_azimuthal_cells) + ((t + num_azimuthal_cells - 1) % num_azimuthal_cells);
             }
-            if (r < NUM_RADIAL_CELLS - 1) {
-                s.n[4] = ((r + 1) * NUM_AZIMUTHAL_CELLS) + t;
-                s.n[3] = ((r + 1) * NUM_AZIMUTHAL_CELLS) + ((t + 1) % NUM_AZIMUTHAL_CELLS);
-                s.n[5] = ((r + 1) * NUM_AZIMUTHAL_CELLS) + ((t + NUM_AZIMUTHAL_CELLS - 1) % NUM_AZIMUTHAL_CELLS);
+            if (r < num_radial_cells - 1) {
+                s.n[4] = ((r + 1) * num_azimuthal_cells) + t;
+                s.n[3] = ((r + 1) * num_azimuthal_cells) + ((t + 1) % num_azimuthal_cells);
+                s.n[5] = ((r + 1) * num_azimuthal_cells) + ((t + num_azimuthal_cells - 1) % num_azimuthal_cells);
 
             }
-            s.n[2] = (r * NUM_AZIMUTHAL_CELLS) + ((t + 1) % NUM_AZIMUTHAL_CELLS);
-            s.n[6] = (r * NUM_AZIMUTHAL_CELLS) + ((t + NUM_AZIMUTHAL_CELLS - 1) % NUM_AZIMUTHAL_CELLS);
+            s.n[2] = (r * num_azimuthal_cells) + ((t + 1) % num_azimuthal_cells);
+            s.n[6] = (r * num_azimuthal_cells) + ((t + num_azimuthal_cells - 1) % num_azimuthal_cells);
 
 
             segment.push_back(s);
@@ -158,7 +157,7 @@ void InitializeDisk() {
 }
 
 
-void PrintPoints() {
+void Disk::PrintPoints() {
     for (int i = 0; i < segmentVertices.size(); i++) {
         SegmentVertices pt = segmentVertices[i];
         fprintf(stdout,
@@ -168,7 +167,7 @@ void PrintPoints() {
     fprintf(stdout, "\n");
 }
 
-void CalcSystemMass() {
+void Disk::CalcSystemMass() {
     double disk_mass = 0;
     double pr = 0;
     double pt = 0;
@@ -183,7 +182,7 @@ void CalcSystemMass() {
             stellar_mass, disk_mass, escape_mass, stellar_mass + disk_mass, pr, pt);
 }
 
-void MapSegmentToColor() {
+void Disk::MapSegmentToColor() {
 
     double d_max = 250;
 
@@ -200,7 +199,7 @@ void MapSegmentToColor() {
     }
 }
 
-void swapSegments() {
+void Disk::swapSegments() {
 
     segment = newSegment;
 }
@@ -211,11 +210,11 @@ using namespace std;
 double minimum;
 double maximum;
 double span;
-std::vector<double> getDensities() {
+std::vector<double> Disk::loadDensities( string filename ) {
 
     std::vector<double> densities;
     string line;
-    ifstream myfile("/data/UZH/CSII/data1/density.data");
+    ifstream myfile(filename);
     if (myfile.is_open()) {
 
         getline( myfile, line );
@@ -242,3 +241,21 @@ std::vector<double> getDensities() {
     */
     return densities;
 }
+
+unsigned int Disk::get_num_radial_cells() {
+    return num_radial_cells;
+}
+
+unsigned int Disk::get_num_azimuthal_cells() {
+    return num_azimuthal_cells;
+}
+
+double Disk::get_stellar_mass() {
+    return stellar_mass;
+}
+
+double Disk::get_escape_mass() {
+    return escape_mass;
+}
+
+

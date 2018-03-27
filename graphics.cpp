@@ -15,7 +15,6 @@
 #include <shader.hpp>
 
 #include "graphics.h"
-#include "gravity.h"
 
 #define WINDOW_TITLE_PREFIX "Gravity"
 
@@ -41,7 +40,11 @@ void GraphicsMainLoop() {
 
 }
 
-void InitializeGraphics(int argc, char *argv[]) {
+Disk * disk;
+
+void InitializeGraphics(int argc, char *argv[], Disk *d) {
+
+    disk = d;
 
     InitWindow(argc, argv);
 
@@ -84,17 +87,17 @@ void RenderFunction(void) {
     // in the "MVP" uniform
     glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &MVP[0][0]);
 
-    std::vector<SegmentVertices> segmentVertices = getSegmentVertices();
+    std::vector<Disk::SegmentVertices> segmentVertices = disk->getSegmentVertices();
     glBindBuffer(GL_ARRAY_BUFFER, VboAreaId);
-    glBufferData(GL_ARRAY_BUFFER, segmentVertices.size() * sizeof(SegmentVertices), &segmentVertices[0], GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(XYZW_GL), 0);
+    glBufferData(GL_ARRAY_BUFFER, segmentVertices.size() * sizeof(Disk::SegmentVertices), &segmentVertices[0], GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(Disk::XYZW_GL), 0);
     glEnableVertexAttribArray(1);
 
-    MapSegmentToColor();
-    std::vector<SegmentColours> segmentColours = getSegmentColours();
+    disk->MapSegmentToColor();
+    std::vector<Disk::SegmentColours> segmentColours = disk->getSegmentColours();
     glBindBuffer(GL_ARRAY_BUFFER, VboPropertyId);
-    glBufferData(GL_ARRAY_BUFFER, segmentColours.size() * sizeof(SegmentColours), &segmentColours[0], GL_STATIC_DRAW);
-    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(RGBA_GL), 0);
+    glBufferData(GL_ARRAY_BUFFER, segmentColours.size() * sizeof(Disk::SegmentColours), &segmentColours[0], GL_STATIC_DRAW);
+    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(Disk::RGBA_GL), 0);
     glEnableVertexAttribArray(0);
 
     glDrawArrays(GL_TRIANGLES, 0, segmentVertices.size()*6);
@@ -102,16 +105,11 @@ void RenderFunction(void) {
     glFlush();
     glutSwapBuffers();
 
-    ApplyBruteForceGravity(
-            getNewSegment(),
-            getSegment(),
-            getStellarMass(),
-            getEscapeMass()
-    );
+    ApplyBruteForceGravity(disk);
 
-    swapSegments();
+    disk->swapSegments();
 
-    CalcSystemMass();
+    disk->CalcSystemMass();
 }
 
 
@@ -149,22 +147,22 @@ void Cleanup(void) {
 void CreateVBO(void) {
     unsigned int ErrorCheckValue = glGetError();
 
-    std::vector<SegmentVertices> segmentVertices = getSegmentVertices();
-    std::vector<SegmentColours> segmentColours = getSegmentColours();
+    std::vector<Disk::SegmentVertices> segmentVertices = disk->getSegmentVertices();
+    std::vector<Disk::SegmentColours> segmentColours = disk->getSegmentColours();
 
     glGenVertexArrays(1, &VaoId);
     glBindVertexArray(VaoId);
 
     glGenBuffers(1, &VboAreaId);
     glBindBuffer(GL_ARRAY_BUFFER, VboAreaId);
-    glBufferData(GL_ARRAY_BUFFER, segmentVertices.size() * sizeof(SegmentVertices), &segmentVertices[0], GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(XYZW_GL), 0);
+    glBufferData(GL_ARRAY_BUFFER, segmentVertices.size() * sizeof(Disk::SegmentVertices), &segmentVertices[0], GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(Disk::XYZW_GL), 0);
     glEnableVertexAttribArray(0);
 
     glGenBuffers(1, &VboPropertyId);
     glBindBuffer(GL_ARRAY_BUFFER, VboPropertyId);
-    glBufferData(GL_ARRAY_BUFFER, segmentColours.size() * sizeof(SegmentColours), &segmentColours[0], GL_STATIC_DRAW);
-    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(GL_RGBA), 0);
+    glBufferData(GL_ARRAY_BUFFER, segmentColours.size() * sizeof(Disk::SegmentColours), &segmentColours[0], GL_STATIC_DRAW);
+    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(Disk::RGBA_GL), 0);
     glEnableVertexAttribArray(1);
 
     ErrorCheckValue = glGetError();

@@ -5,6 +5,9 @@
 #ifndef CSII_GRAPHICS_H
 #define CSII_GRAPHICS_H
 
+#include "disk.h"
+#include "gravity.h"
+
 void RenderFunction(void);
 
 void IdleFunction(void);
@@ -25,7 +28,7 @@ void InitWindow(int argc, char *argv[]);
 
 void ResizeFunction(int, int);
 
-void InitializeGraphics(int argc, char *argv[]);
+void InitializeGraphics(int argc, char *argv[], Disk *disk);
 
 void GraphicsMainLoop();
 

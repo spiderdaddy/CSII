@@ -9,22 +9,22 @@
 
 void CartesianBruteForceSelfGravityProvider::calculate() {
 
-    std::vector<Segment>& newSegment = *pNewSegment;
-    std::vector<Segment>& segment = *pSegment;
+    std::vector<Disk::Segment>& newSegment = *pNewSegment;
+    std::vector<Disk::Segment>& segment = *pSegment;
 
     // Calculate acceleration for all points
-    for (std::size_t r = 0; r < NUM_RADIAL_CELLS; r++) {
-        for (std::size_t t = 0; t < NUM_AZIMUTHAL_CELLS; t++) {
+    for (std::size_t r = 0; r < num_radial_cells; r++) {
+        for (std::size_t t = 0; t < num_azimuthal_cells; t++) {
 
-            std::size_t i1 = (r * NUM_AZIMUTHAL_CELLS) + t;
+            std::size_t i1 = (r * num_azimuthal_cells) + t;
 
             double ar = 0;
             double at = 0;
 
-            for (std::size_t sr = 0; sr < NUM_RADIAL_CELLS; sr++) {
-                for (std::size_t st = 0; st < NUM_AZIMUTHAL_CELLS; st++) {
+            for (std::size_t sr = 0; sr < num_radial_cells; sr++) {
+                for (std::size_t st = 0; st < num_azimuthal_cells; st++) {
 
-                    std::size_t i2 = (sr * NUM_AZIMUTHAL_CELLS) + st;
+                    std::size_t i2 = (sr * num_azimuthal_cells) + st;
 
                     if (i2 != i1) {
 

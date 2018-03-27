@@ -13,8 +13,8 @@ class PolarBruteForceSelfGravityProvider : public GravityProvider {
 public:
 
     PolarBruteForceSelfGravityProvider (
-            std::vector<Segment> *pNS,
-            std::vector<Segment> *pS,
+            std::vector<Disk::Segment> *pNS,
+            std::vector<Disk::Segment> *pS,
             int num_r,
             int num_a,
             double * sm

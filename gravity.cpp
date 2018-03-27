@@ -8,27 +8,27 @@
 
 #include <glm/glm.hpp>
 
+#include "disk.h"
 #include "gravity.h"
 #include "CartesianBruteForceSelfGravityProvider.h"
 #include "PolarBruteForceSelfGravityProvider.h"
 #include "StellarGravityProvider.h"
 
-
 double r2 = 1 / std::sqrt(2);
 
 void initialiseAcceleration(
-        std::vector<Segment> *pNewSegment,
-        std::vector<Segment> *pSegment) {
+        std::vector<Disk::Segment> *pNewSegment,
+        std::vector<Disk::Segment> *pSegment) {
 
-    std::vector<Segment> &newSegment = *pNewSegment;
-    std::vector<Segment> &segment = *pSegment;
+    std::vector<Disk::Segment> &newSegment = *pNewSegment;
+    std::vector<Disk::Segment> &segment = *pSegment;
 
-    std::for_each(newSegment.begin(), newSegment.end(), [](Segment &el) {
+    std::for_each(newSegment.begin(), newSegment.end(), [](Disk::Segment &el) {
         el.ar = 0;
         el.at = 0;
     });
 
-    std::for_each(segment.begin(), segment.end(), [](Segment &el) {
+    std::for_each(segment.begin(), segment.end(), [](Disk::Segment &el) {
         el.ar = 0;
         el.at = 0;
     });
@@ -36,10 +36,10 @@ void initialiseAcceleration(
 
 
 void ApplyAcceleration(
-        std::vector<Segment> *pNewSegment
+        std::vector<Disk::Segment> *pNewSegment
 ) {
 
-    std::vector<Segment> &newSegment = *pNewSegment;
+    std::vector<Disk::Segment> &newSegment = *pNewSegment;
 
     // apply acceleration to all velocities
     for (int i = 0; i < newSegment.size(); i++) {
@@ -51,26 +51,22 @@ void ApplyAcceleration(
 
 }
 
-void MoveMass(
-        std::vector<Segment> *pNewSegment,
-        double *stellar_mass,
-        double *escape_mass
-) {
-    std::vector<Segment> &newSegment = *pNewSegment;
+void MoveMass( Disk *disk ) {
+    std::vector<Disk::Segment> &newSegment = *disk->getNewSegment();
 
     // populate points
-    double radius_step = (OUTER_RADIUS - INNER_RADIUS) / NUM_RADIAL_CELLS;
+    double radius_step = (OUTER_RADIUS - INNER_RADIUS) / disk->get_num_radial_cells();
     double radius_step_2 = radius_step / 2;
 
     // based on velocities, move the matter, conserve momentum
-    for (std::size_t r = 0; r < NUM_RADIAL_CELLS; r++) {
-        for (std::size_t t = 0; t < NUM_AZIMUTHAL_CELLS; t++) {
+    for (std::size_t r = 0; r < disk->get_num_radial_cells(); r++) {
+        for (std::size_t t = 0; t < disk->get_num_azimuthal_cells(); t++) {
 
-            std::size_t i1 = (t * NUM_RADIAL_CELLS) + r;
+            std::size_t i1 = (t * disk->get_num_radial_cells()) + r;
 
             long *n = &newSegment[i1].n[0];
 
-            double theta_step = 2 * (double) M_PI * newSegment[i1].r / NUM_AZIMUTHAL_CELLS;
+            double theta_step = 2 * (double) M_PI * newSegment[i1].r / disk->get_num_azimuthal_cells();
             double theta_step_2 = theta_step / 2;
             double r1 = newSegment[i1].r - radius_step_2;
             double r2 = r1 + newSegment[i1].vr;
@@ -126,9 +122,9 @@ void MoveMass(
             double m1 = newSegment[i1].density * newSegment[i1].area;
             if (i2 < 0) {
                 if (n1 == 0) {
-                    *stellar_mass += dm;
+                    *disk->getStellarMass() += dm;
                 } else {
-                    *escape_mass += dm;
+                    *disk->getEscapeMass() += dm;
                 }
             } else {
                 newSegment[i2].pr.push_back({newSegment[i1].vr, dm});
@@ -140,9 +136,9 @@ void MoveMass(
             dm = newSegment[i1].density * a2;
             if (i2 < 0) {
                 if (n2 == 1 || n2 == 7) {
-                    *stellar_mass += dm;
+                    *disk->getStellarMass() += dm;
                 } else {
-                    *escape_mass += dm;
+                    *disk->getEscapeMass() += dm;
                 }
             } else {
 
@@ -189,47 +185,38 @@ void MoveMass(
 
 }
 
-void ApplyBruteForceGravity(
-        std::vector<Segment> *newSegment,
-        std::vector<Segment> *segment,
-        double *stellar_mass,
-        double *escape_mass
-) {
+void ApplyBruteForceGravity( Disk * disk ) {
 
     initialiseAcceleration(
-            newSegment,
-            segment
+            disk->getNewSegment(),
+            disk->getSegment()
     );
 
     GravityProvider *bfgp = new PolarBruteForceSelfGravityProvider(
-            newSegment,
-            segment,
-            NUM_RADIAL_CELLS,
-            NUM_AZIMUTHAL_CELLS,
-            stellar_mass
+            disk->getNewSegment(),
+            disk->getSegment(),
+            disk->get_num_radial_cells(),
+            disk->get_num_azimuthal_cells(),
+            disk->getStellarMass()
     );
 
     bfgp->calculate();
 
     GravityProvider *sgp = new StellarGravityProvider(
-            newSegment,
-            segment,
-            NUM_RADIAL_CELLS,
-            NUM_AZIMUTHAL_CELLS,
-            stellar_mass
+            disk->getNewSegment(),
+            disk->getSegment(),
+            disk->get_num_radial_cells(),
+            disk->get_num_azimuthal_cells(),
+            disk->getStellarMass()
     );
 
     sgp->calculate();
 
     ApplyAcceleration(
-            newSegment
+            disk->getNewSegment()
     );
 
-    MoveMass(
-            newSegment,
-            stellar_mass,
-            escape_mass
-    );
+    MoveMass( disk );
 
 }
 

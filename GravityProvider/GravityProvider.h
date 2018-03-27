@@ -15,8 +15,8 @@ public:
     GravityProvider()= default;
 
     GravityProvider(
-        std::vector<Segment> *pNewSegment,
-        std::vector<Segment> *pSegment,
+        std::vector<Disk::Segment> *pNewSegment,
+        std::vector<Disk::Segment> *pSegment,
         int num_radial_cells,
         int num_azimuthal_cells,
         double * stellar_mass
@@ -25,8 +25,8 @@ public:
     virtual void calculate();
 
 protected:
-    std::vector<Segment> *pNewSegment;
-    std::vector<Segment> *pSegment;
+    std::vector<Disk::Segment> *pNewSegment;
+    std::vector<Disk::Segment> *pSegment;
     int num_radial_cells;
     int num_azimuthal_cells;
     double * stellar_mass;
