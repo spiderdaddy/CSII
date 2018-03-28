@@ -32,12 +32,10 @@ void PolarBruteForceSelfGravityProvider::calculate() {
                         double cos_diff_theta = cos(diff_theta);
                         double diff_r = segment[i1].r - segment[i2].r;
                         double exp_diff_r = exp(diff_r);
-                        double distance = pow(
-                                exp_diff_r * exp_diff_r
+                        double distance = exp_diff_r * exp_diff_r
                                 + 1
-                                - ( 2 * exp_diff_r * cos_diff_theta )
-                                , 1.5 )
-                        ;
+                                - ( 2 * exp_diff_r * cos_diff_theta );
+                        distance = distance * sqrt(distance);
                         double a = 0;
                         if (distance > 0) {
                             a = G * segment[i2].density / distance;
