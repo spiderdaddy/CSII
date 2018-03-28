@@ -277,6 +277,6 @@ void InitWindow(int argc, char *argv[]) {
 void ResizeFunction(int Width, int Height) {
     CurrentWidth = Width;
     CurrentHeight = Height;
-    glViewport(0, 0, min(CurrentWidth, CurrentHeight), min(CurrentWidth, CurrentHeight));
+    glViewport(0, 0, std::min(CurrentWidth, CurrentHeight), std::min(CurrentWidth, CurrentHeight));
 
 }

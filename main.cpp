@@ -12,8 +12,8 @@
 
 void Initialize(int argc, char *argv[]) {
 
-//    Disk *disk = new Disk(NUM_RADIAL_CELLS, NUM_AZIMUTHAL_CELLS, "/data/UZH/CSII/data1/density.data");
-    Disk *disk = new Disk(NUM_RADIAL_CELLS, NUM_AZIMUTHAL_CELLS, "/data/UZH/CSII/data1/density_planet.data");
+    Disk *disk = new Disk(NUM_RADIAL_CELLS, NUM_AZIMUTHAL_CELLS, "/data/UZH/CSII/data1/density.data");
+//    Disk *disk = new Disk(NUM_RADIAL_CELLS, NUM_AZIMUTHAL_CELLS, "/data/UZH/CSII/data1/density_planet.data");
 
     InitializeGraphics(argc, argv, disk);
 
@@ -22,12 +22,9 @@ void Initialize(int argc, char *argv[]) {
 
 int main(int argc, char *argv[]) {
 
-    QuadTree qt = QuadTree(16, 16);
-    qt.printNodes();
+    Initialize(argc, argv);
 
-    //Initialize(argc, argv);
-
-    //GraphicsMainLoop();
+    GraphicsMainLoop();
 
     exit(EXIT_SUCCESS);
 }

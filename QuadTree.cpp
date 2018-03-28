@@ -5,14 +5,13 @@
 #include <cstdlib>
 #include <cstring>
 #include <cmath>
+#include <iostream>
 #include "QuadTree.h"
+#include <bits/stdc++.h>
 
 using namespace std;
 
-unsigned num_radial_points;
-unsigned num_azimuthal_points;
 
-QTNode *head;
 
 QTNode::QTNode(QTNode *p, int rs, int re, int ts, int te, unsigned tree_l) {
     parent = p;
@@ -113,7 +112,22 @@ void printOneNode(QTNode *node) {
 }
 
 void QuadTree::printNodes() {
-    printOneNode(head);
+
+  std::streambuf *psbuf, *backup;
+  std::ofstream filestr;
+  filestr.open ("/tmp/QuadTree.txt");
+
+  backup = std::cout.rdbuf();     // back up cout's streambuf
+
+  psbuf = filestr.rdbuf();        // get file's streambuf
+  std::cout.rdbuf(psbuf);         // assign streambuf to cout
+
+  printOneNode(head);
+
+  std::cout.rdbuf(backup);        // restore cout's original streambuf
+
+  filestr.close();
+
 
 }
 

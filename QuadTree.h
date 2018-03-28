@@ -32,6 +32,9 @@ public:
 private:
     QTNode* createNode(QTNode *parent, int r_start, int r_end, int t_start, int t_end, unsigned tree_level );
     unsigned max_level = 0;
+    unsigned num_radial_points;
+    unsigned num_azimuthal_points;
+    QTNode *head;
 
 };
 

@@ -64,7 +64,7 @@ void MoveMass( Disk *disk ) {
 
             std::size_t i1 = (t * disk->get_num_radial_cells()) + r;
 
-            long *n = &newSegment[i1].n[0];
+            long *n = &newSegment[i1].neighbour[0];
 
             double theta_step = 2 * (double) M_PI * newSegment[i1].r / disk->get_num_azimuthal_cells();
             double theta_step_2 = theta_step / 2;

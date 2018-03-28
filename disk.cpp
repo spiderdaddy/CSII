@@ -16,10 +16,8 @@
 #include "disk.h"
 
 
-std::vector<Disk::SegmentVertices> segmentVertices;
-std::vector<Disk::SegmentColours> segmentColours;
-std::vector<Disk::Segment> segment;
-std::vector<Disk::Segment> newSegment;
+using namespace std;
+
 
 std::vector<Disk::SegmentVertices> Disk::getSegmentVertices() { return segmentVertices; }
 
@@ -84,18 +82,18 @@ Disk::Disk( unsigned int num_r, unsigned int num_theta, std::string filename ) {
             }
 
             if (r > 0) {
-                s.n[0] = ((r - 1) * num_azimuthal_cells) + t;
-                s.n[1] = ((r - 1) * num_azimuthal_cells) + ((t + 1) % num_azimuthal_cells);
-                s.n[7] = ((r - 1) * num_azimuthal_cells) + ((t + num_azimuthal_cells - 1) % num_azimuthal_cells);
+                s.neighbour[0] = ((r - 1) * num_azimuthal_cells) + t;
+                s.neighbour[1] = ((r - 1) * num_azimuthal_cells) + ((t + 1) % num_azimuthal_cells);
+                s.neighbour[7] = ((r - 1) * num_azimuthal_cells) + ((t + num_azimuthal_cells - 1) % num_azimuthal_cells);
             }
             if (r < num_radial_cells - 1) {
-                s.n[4] = ((r + 1) * num_azimuthal_cells) + t;
-                s.n[3] = ((r + 1) * num_azimuthal_cells) + ((t + 1) % num_azimuthal_cells);
-                s.n[5] = ((r + 1) * num_azimuthal_cells) + ((t + num_azimuthal_cells - 1) % num_azimuthal_cells);
+                s.neighbour[4] = ((r + 1) * num_azimuthal_cells) + t;
+                s.neighbour[3] = ((r + 1) * num_azimuthal_cells) + ((t + 1) % num_azimuthal_cells);
+                s.neighbour[5] = ((r + 1) * num_azimuthal_cells) + ((t + num_azimuthal_cells - 1) % num_azimuthal_cells);
 
             }
-            s.n[2] = (r * num_azimuthal_cells) + ((t + 1) % num_azimuthal_cells);
-            s.n[6] = (r * num_azimuthal_cells) + ((t + num_azimuthal_cells - 1) % num_azimuthal_cells);
+            s.neighbour[2] = (r * num_azimuthal_cells) + ((t + 1) % num_azimuthal_cells);
+            s.neighbour[6] = (r * num_azimuthal_cells) + ((t + num_azimuthal_cells - 1) % num_azimuthal_cells);
 
 
             segment.push_back(s);
@@ -145,6 +143,9 @@ Disk::Disk( unsigned int num_r, unsigned int num_theta, std::string filename ) {
         radius *= r_ratio;
     }
 
+    qt = new QuadTree(num_radial_cells, num_azimuthal_cells);
+    //qt->printNodes();
+
     fprintf(
             stdout,
             "INFO: segmentVertices.size(): %d\n",
@@ -188,8 +189,8 @@ void Disk::MapSegmentToColor() {
 
     for (int i = 0; i < segmentColours.size(); i++) {
         SegmentColours *scp = &segmentColours[i];
-        scp->c1.r = std::min( std::abs( std::min((float)segment[i].density, 0.0f) ), 1.0f );
-        scp->c1.g = std::min( std::abs( std::max((float)segment[i].density / 3.0f, 0.0f) ), 1.0f );
+        scp->c1.r = std::min( std::abs( std::min((float)(segment[i].density / abs(minimum_density)), 0.0f) ), 1.0f );
+        scp->c1.g = std::min( std::abs( std::max((float)(segment[i].density / abs(maximum_density)), 0.0f) ), 1.0f );
         scp->c1.b = 0.15f;
         scp->c2 = scp->c1;
         scp->c3 = scp->c1;
@@ -204,14 +205,7 @@ void Disk::swapSegments() {
     segment = newSegment;
 }
 
-
-using namespace std;
-
-double minimum;
-double maximum;
-double span;
 std::vector<double> Disk::loadDensities( string filename ) {
-
     std::vector<double> densities;
     string line;
     ifstream myfile(filename);
@@ -228,10 +222,10 @@ std::vector<double> Disk::loadDensities( string filename ) {
         myfile.close();
     } else cout << "Unable to open file";
 
-    minimum = *std::min_element(densities.begin(), densities.end());
-    maximum = *std::max_element(densities.begin(), densities.end());
+    minimum_density = *std::min_element(densities.begin(), densities.end());
+    maximum_density = *std::max_element(densities.begin(), densities.end());
     fprintf(stdout,
-            "INFO: Density: Minimum %.8e Maximum: %.8e\n", minimum, maximum);
+            "INFO: Density: Minimum %.8e Maximum: %.8e\n", minimum_density, maximum_density);
 
 
     /*

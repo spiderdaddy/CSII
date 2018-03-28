@@ -7,6 +7,8 @@
 #include <string>
 #include <vector>
 
+#include "QuadTree.h"
+
 #define AU 1.49e08
 #define INNER_RADIUS 0.5
 #define OUTER_RADIUS 1.5
@@ -66,7 +68,7 @@ public:
         double ar, at;
         double area;
         double density;
-        long n[8] = {-1, -1, -1, -1, -1, -1, -1, -1}; //nearest neighbours
+        long neighbour[8] = {-1, -1, -1, -1, -1, -1, -1, -1}; //nearest neighbours
         std::vector<P> pr;
         std::vector<P> pt;
     };
@@ -106,6 +108,15 @@ private:
     unsigned int num_azimuthal_cells;
     double stellar_mass = M_SUN;
     double escape_mass = 0;
+
+    std::vector<Disk::SegmentVertices> segmentVertices;
+    std::vector<Disk::SegmentColours> segmentColours;
+    std::vector<Disk::Segment> segment;
+    std::vector<Disk::Segment> newSegment;
+
+    double minimum_density;
+    double maximum_density;
+    QuadTree* qt;
 
 
 };
