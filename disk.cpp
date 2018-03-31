@@ -21,7 +21,11 @@ using namespace std;
 
 std::vector<Disk::SegmentVertices> Disk::getSegmentVertices() { return segmentVertices; }
 
+std::vector<Disk::SegmentVertices> Disk::getGravityVertices() { return gravityVertices; }
+
 std::vector<Disk::SegmentColours> Disk::getSegmentColours() { return segmentColours; }
+
+std::vector<Disk::SegmentColours> Disk::getGravityColours() { return gravityColours; }
 
 std::vector<Disk::Segment> *Disk::getSegment() { return &segment; }
 
@@ -43,6 +47,8 @@ Disk::Disk( unsigned int num_r, unsigned int num_theta, std::string filename ) {
 
     segmentVertices.reserve(num_radial_cells * num_azimuthal_cells);
     segmentColours.reserve(num_radial_cells * num_azimuthal_cells);
+    gravityVertices.reserve(num_radial_cells * num_azimuthal_cells);
+    gravityColours.reserve(num_radial_cells * num_azimuthal_cells);
     segment.reserve(num_radial_cells * num_azimuthal_cells);
     newSegment.reserve(num_radial_cells * num_azimuthal_cells);
 
@@ -124,7 +130,21 @@ Disk::Disk( unsigned int num_r, unsigned int num_theta, std::string filename ) {
             sv.v6.y = (float)(radius_upper * sin(theta + theta_step_2));
             sv.v6.z = 0.0f;
             sv.v6.w = 1.0f;
+            sv.v1.x -= 1.1 * OUTER_RADIUS;
+            sv.v2.x -= 1.1 * OUTER_RADIUS;
+            sv.v3.x -= 1.1 * OUTER_RADIUS;
+            sv.v4.x -= 1.1 * OUTER_RADIUS;
+            sv.v5.x -= 1.1 * OUTER_RADIUS;
+            sv.v6.x -= 1.1 * OUTER_RADIUS;
+
             segmentVertices.push_back(sv);
+            sv.v1.x += 2.2 * OUTER_RADIUS;
+            sv.v2.x += 2.2 * OUTER_RADIUS;
+            sv.v3.x += 2.2 * OUTER_RADIUS;
+            sv.v4.x += 2.2 * OUTER_RADIUS;
+            sv.v5.x += 2.2 * OUTER_RADIUS;
+            sv.v6.x += 2.2 * OUTER_RADIUS;
+            gravityVertices.push_back(sv);
 
             SegmentColours sc;
             sc.c1.r = 0;
@@ -137,7 +157,7 @@ Disk::Disk( unsigned int num_r, unsigned int num_theta, std::string filename ) {
             sc.c5 = sc.c1;
             sc.c6 = sc.c1;
             segmentColours.push_back(sc);
-
+            gravityColours.push_back(sc);
         }
 
         radius *= r_ratio;
@@ -153,6 +173,7 @@ Disk::Disk( unsigned int num_r, unsigned int num_theta, std::string filename ) {
     );
 
     MapSegmentToColor();
+    MapGravityToColor();
     //PrintPoints();
     CalcSystemMass();
 }
@@ -200,12 +221,74 @@ void Disk::MapSegmentToColor() {
     }
 }
 
+/*
+ * https://stackoverflow.com/questions/37876316/map-value-range-to-rainbow-colormap
+ * Please try this function, which has linear interpolation and wraps around to red->green->blue->red.
+ * np is your maximum value (a) and p is the input value (v).
+ * You could get it to stop at violet by increasing np a bit so that p is always less than np.
+ */
+
+void getcolor(double p, double np, float&r, float&g, float&b) {
+    double inc = 6.0 / np;
+    double x = p * inc;
+    r = 0.0f; g = 0.0f; b = 0.0f;
+    if ((0 <= x && x <= 1) || (5 <= x && x <= 6)) r = 1.0f;
+    else if (4 <= x && x <= 5) r = x - 4;
+    else if (1 <= x && x <= 2) r = 1.0f - (x - 1);
+    if (1 <= x && x <= 3) g = 1.0f;
+    else if (0 <= x && x <= 1) g = x - 0;
+    else if (3 <= x && x <= 4) g = 1.0f - (x - 3);
+    if (3 <= x && x <= 5) b = 1.0f;
+    else if (2 <= x && x <= 3) b = x - 2;
+    else if (5 <= x && x <= 6) b = 1.0f - (x - 5);
+}
+
+void Disk::MapGravityToColor() {
+
+    double d_max = 0;
+
+    for (int i = 0; i < gravityColours.size(); i++) {
+        d_max = max(d_max, sqrt(segment[i].at*segment[i].at + segment[i].ar*segment[i].ar));
+    }
+
+    for (int i = 0; i < gravityColours.size(); i++) {
+        SegmentColours *scp = &gravityColours[i];
+        double H = sqrt(segment[i].at*segment[i].at + segment[i].ar*segment[i].ar);
+        double theta = 0;
+        if ( segment[i].ar > 0 ) theta = atan(segment[i].at/segment[i].ar);
+        else theta = atan(segment[i].at/segment[i].ar) + M_PI;
+//        fprintf(
+//                stdout,
+//                "INFO: %f %f %0.18f %0.18f\r",
+//                segment[i].r, segment[i].theta, H, theta
+//        );
+        theta += segment[i].theta;
+        if (theta < 0 ) theta = (2.0 * M_PI) + theta;
+        if (theta > 2.0 * M_PI) theta = theta - (2.0 * M_PI);
+        getcolor( theta, (2.0 * M_PI), scp->c1.r, scp->c1.g, scp->c1.b );
+        double N = H / d_max;
+        scp->c1.r *= N;
+        scp->c1.g *= N;
+        scp->c1.b *= N;
+        scp->c2 = scp->c1;
+        scp->c3 = scp->c1;
+        scp->c4 = scp->c1;
+        scp->c5 = scp->c1;
+        scp->c6 = scp->c1;
+
+
+    }
+}
+
+
+
 void Disk::swapSegments() {
 
     segment = newSegment;
 }
 
 std::vector<double> Disk::loadDensities( string filename ) {
+
     std::vector<double> densities;
     string line;
     ifstream myfile(filename);

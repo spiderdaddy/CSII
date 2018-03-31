@@ -28,10 +28,10 @@ void initialiseAcceleration(
         el.at = 0;
     });
 
-    std::for_each(segment.begin(), segment.end(), [](Disk::Segment &el) {
-        el.ar = 0;
-        el.at = 0;
-    });
+//    std::for_each(segment.begin(), segment.end(), [](Disk::Segment &el) {
+//        el.ar = 0;
+//        el.at = 0;
+//    });
 }
 
 
@@ -201,7 +201,7 @@ void ApplyBruteForceGravity( Disk * disk ) {
     );
 
     bfgp->calculate();
-
+/*
     GravityProvider *sgp = new StellarGravityProvider(
             disk->getNewSegment(),
             disk->getSegment(),
@@ -217,7 +217,7 @@ void ApplyBruteForceGravity( Disk * disk ) {
     );
 
     MoveMass( disk );
-
+*/
 }
 
 

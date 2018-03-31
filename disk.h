@@ -78,10 +78,18 @@ public:
     void CalcSystemMass();
 
     void MapSegmentToColor();
+    void MapGravityToColor();
+
 
     std::vector<SegmentVertices> getSegmentVertices();
 
     std::vector<SegmentColours> getSegmentColours();
+
+    std::vector<SegmentVertices> getGravityVertices();
+
+    std::vector<SegmentColours> getGravityColours();
+
+
 
     std::vector<Segment> *getSegment();
 
@@ -117,6 +125,9 @@ private:
     double minimum_density;
     double maximum_density;
     QuadTree* qt;
+
+    std::vector<Disk::SegmentVertices> gravityVertices;
+    std::vector<Disk::SegmentColours> gravityColours;
 
 
 };

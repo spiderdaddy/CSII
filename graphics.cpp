@@ -20,8 +20,8 @@
 
 using namespace glm;
 
-int CurrentWidth = 1000;
-int CurrentHeight = 1000;
+int CurrentWidth = 1800;
+int CurrentHeight = 900;
 int WindowHandle = 0;
 unsigned FrameCount = 0;
 
@@ -101,6 +101,22 @@ void RenderFunction(void) {
     glEnableVertexAttribArray(0);
 
     glDrawArrays(GL_TRIANGLES, 0, segmentVertices.size()*6);
+
+    std::vector<Disk::SegmentVertices> gravityVertices = disk->getGravityVertices();
+    glBindBuffer(GL_ARRAY_BUFFER, VboAreaId);
+    glBufferData(GL_ARRAY_BUFFER, segmentVertices.size() * sizeof(Disk::SegmentVertices), &gravityVertices[0], GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(Disk::XYZW_GL), 0);
+    glEnableVertexAttribArray(1);
+
+    disk->MapGravityToColor();
+    std::vector<Disk::SegmentColours> gravityColours = disk->getGravityColours();
+    glBindBuffer(GL_ARRAY_BUFFER, VboPropertyId);
+    glBufferData(GL_ARRAY_BUFFER, segmentColours.size() * sizeof(Disk::SegmentColours), &gravityColours[0], GL_STATIC_DRAW);
+    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(Disk::RGBA_GL), 0);
+    glEnableVertexAttribArray(0);
+
+    glDrawArrays(GL_TRIANGLES, 0, gravityVertices.size()*6);
+
 
     glFlush();
     glutSwapBuffers();
@@ -207,22 +223,22 @@ void CreateShaders(void) {
                             "../SingleColor.fragmentshader");
 
     // Projection matrix : 45° Field of View, 4:3 ratio, display range : 0.1 unit <-> 100 units
-    //glm::mat4 Projection = glm::perspective(glm::radians(45.0f), 4.0f / 3.0f, 0.1f, 100.0f);
+    // glm::mat4 Projection = glm::perspective(glm::radians(45.0f), 4.0f / 3.0f, 0.1f, 100.0f);
     // Or, for an ortho camera :
-    float ortho = (float) OUTER_RADIUS;
+    float xortho = (float) OUTER_RADIUS * 2;
+    float yortho = (float) OUTER_RADIUS;
     float factor = 1.1f;
 
-    mat4x4 Projection = glm::ortho(-1.0f * factor * ortho, factor * ortho, -1.0f * factor * ortho, factor * ortho, -1.0f, 1.0f); // In world coordinates
+    mat4x4 Projection = glm::ortho(-1.0f * factor * xortho, factor * xortho, -1.0f * factor * yortho, factor * yortho, -2.0f, 2.0f); // In world coordinates
     fprintf(
             stderr,
-            "INFO: ortho: %f\n",
-            ortho
+            "INFO: xortho: %f yortho: %f\n",
+            xortho, yortho
     );
-
 
     // Camera matrix
     mat4x4 View = glm::lookAt(
-            highp_vec3(0, 0, 0.1), // Camera is at (4,3,3), in World Space
+            highp_vec3(0, 0, 1), // Camera in World Space
             highp_vec3(0, 0, 0), // and looks at the origin
             highp_vec3(0, 1, 0)  // Head is up (set to 0,-1,0 to look upside-down)
     );
@@ -277,6 +293,8 @@ void InitWindow(int argc, char *argv[]) {
 void ResizeFunction(int Width, int Height) {
     CurrentWidth = Width;
     CurrentHeight = Height;
-    glViewport(0, 0, std::min(CurrentWidth, CurrentHeight), std::min(CurrentWidth, CurrentHeight));
+    //glViewport(0, 0, std::min(CurrentWidth, CurrentHeight), std::min(CurrentWidth, CurrentHeight));
+    glViewport(0, 0, CurrentWidth, CurrentHeight);
 
 }
+
