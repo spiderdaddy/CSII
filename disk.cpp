@@ -35,6 +35,38 @@ double *Disk::getStellarMass() { return &stellar_mass; }
 
 double *Disk::getEscapeMass() { return &escape_mass; }
 
+int Disk::getCellIndex(int r, int theta) {
+    return ( r * num_azimuthal_cells ) + theta;
+}
+
+double Disk::getDensity( int r, int theta ) {
+    return segment[getCellIndex(r, theta)].density;
+}
+
+double Disk::getArea( int r, int theta ) {
+    return segment[getCellIndex(r, theta)].area;
+}
+
+double Disk::getRLower( int r, int theta ) {
+    return segment[getCellIndex(r, theta)].r / sqrt_r_ratio;
+}
+
+double Disk::getRUpper( int r, int theta ) {
+    return segment[getCellIndex(r, theta)].r * sqrt_r_ratio;
+}
+
+double Disk::getThetaLower( int r, int theta ) {
+    return segment[getCellIndex(r, theta)].theta - theta_step_2;
+}
+
+double Disk::getThetaUpper( int r, int theta ) {
+    return segment[getCellIndex(r, theta)].theta + theta_step_2;
+}
+
+void Disk::setTreeNode( int r, int theta, QTNode * node) {
+    segment[getCellIndex(r, theta)].node = node;
+}
+
 
 Disk::Disk( unsigned int num_r, unsigned int num_theta, std::string filename ) {
 
@@ -55,16 +87,17 @@ Disk::Disk( unsigned int num_r, unsigned int num_theta, std::string filename ) {
     srand(time(NULL));
 
     // populate points
-    double theta_step = 2 * M_PI / num_azimuthal_cells;
-    double theta_step_2 = theta_step / 2;
+    theta_step = 2 * M_PI / num_azimuthal_cells;
+    theta_step_2 = theta_step / 2;
 
-    double r_ratio = std::pow(OUTER_RADIUS/INNER_RADIUS, 1/(double)num_radial_cells);
+    r_ratio = std::pow(OUTER_RADIUS/INNER_RADIUS, 1/(double)num_radial_cells);
+    sqrt_r_ratio = sqrt(r_ratio);
     double radius = INNER_RADIUS * sqrt(r_ratio);
 
     for (size_t r = 0; r < num_radial_cells; r++) {
 
-        double radius_lower = radius/sqrt(r_ratio);
-        double radius_upper = radius*sqrt(r_ratio);
+        double radius_lower = radius/sqrt_r_ratio;
+        double radius_upper = radius*sqrt_r_ratio;
 
         for (size_t t = 0; t < num_azimuthal_cells; t++) {
 
@@ -81,11 +114,7 @@ Disk::Disk( unsigned int num_r, unsigned int num_theta, std::string filename ) {
             s.density = *dIterator;
             dIterator++;
             s.vr = 0;
-            s.vt = sqrt(G * stellar_mass / s.r);
-
-            if (rand() % 2 == 1) {
-                s.vt *= -1;
-            }
+            s.vt = sqrt(1 / s.r) * theta_step;
 
             if (r > 0) {
                 s.neighbour[0] = ((r - 1) * num_azimuthal_cells) + t;
@@ -206,12 +235,17 @@ void Disk::CalcSystemMass() {
 
 void Disk::MapSegmentToColor() {
 
-    double d_max = 250;
+    double d_max_pos = 0;
+    double d_max_neg = 0;
+    for (int i = 0; i < segmentColours.size(); i++) {
+        d_max_pos = std::max(d_max_pos, segment[i].density);
+        d_max_neg = std::min(d_max_neg, segment[i].density);
+    }
 
     for (int i = 0; i < segmentColours.size(); i++) {
         SegmentColours *scp = &segmentColours[i];
-        scp->c1.r = std::min( std::abs( std::min((float)(segment[i].density / abs(minimum_density)), 0.0f) ), 1.0f );
-        scp->c1.g = std::min( std::abs( std::max((float)(segment[i].density / abs(maximum_density)), 0.0f) ), 1.0f );
+        scp->c1.r = std::min( std::abs( std::min((float)(segment[i].density / abs(d_max_neg)), 0.0f) ), 1.0f );
+        scp->c1.g = std::min( std::abs( std::max((float)(segment[i].density / abs(d_max_pos)), 0.0f) ), 1.0f );
         scp->c1.b = 0.15f;
         scp->c2 = scp->c1;
         scp->c3 = scp->c1;
@@ -333,6 +367,45 @@ double Disk::get_stellar_mass() {
 
 double Disk::get_escape_mass() {
     return escape_mass;
+}
+
+QuadTree *Disk::getQuadTree() const {
+    return qt;
+}
+
+
+QTNode *Disk::calcTreeValues(QTNode *parent, QTNode *node) {
+
+    // If this node is a single cell, then just set the density and return
+    if ( (node->r_start == node->r_end)
+            && (node->t_start == node->t_end) ) {
+        node->density = this->getDensity( node->r_start, node->t_start );
+        node->area = this->getArea( node->r_start, node->t_start );
+        node->r = ( this->getRLower( node->r_start, node->t_start ) + this->getRUpper( node->r_end, node->t_end ) ) / 2;
+        node->theta = ( this->getThetaLower( node->r_start, node->t_start ) + this->getThetaUpper( node->r_end, node->t_end ) ) / 2;
+        this->setTreeNode( node->r_start, node->t_start, node );
+    } else {
+
+        int cells = 0;
+        node->area = 0;
+        node->density = 0;
+
+        for (int i = 0; i < 4; i++) {
+            if(node->leaf[i] != nullptr) {
+                cells ++;
+                calcTreeValues(node, node->leaf[i]);
+                node->area += node->leaf[i]->area;
+                node->density += node->leaf[i]->density;
+            }
+        }
+
+        node->density /= cells;
+
+        node->r = ( this->getRLower( node->r_start, node->t_start ) + this->getRUpper( node->r_end, node->t_end ) ) / 2;
+        node->theta = ( this->getThetaLower( node->r_start, node->t_start ) + this->getThetaUpper( node->r_end, node->t_end ) ) / 2;
+
+    }
+    return node;
 }
 
 

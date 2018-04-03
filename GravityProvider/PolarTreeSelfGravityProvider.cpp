@@ -5,14 +5,16 @@
 #include <iostream>
 #include <cmath>
 
-#include "PolarBruteForceSelfGravityProvider.h"
+#include "PolarTreeSelfGravityProvider.h"
 
 
-void PolarBruteForceSelfGravityProvider::calculate() {
+void PolarTreeSelfGravityProvider::calculate() {
 
     startTimer();
 
-    int nearestNeighbours = max(GravityProvider::num_radial_cells, GravityProvider::num_azimuthal_cells) + 1;
+    disk->calcTreeValues(nullptr,  disk->getQuadTree()->getHead() );
+    disk->getQuadTree()->printNodes();
+
     std::vector<Disk::Segment> &newSegment = *GravityProvider::pNewSegment;
     std::vector<Disk::Segment> &segment = *GravityProvider::pSegment;
 
@@ -20,25 +22,24 @@ void PolarBruteForceSelfGravityProvider::calculate() {
     for (int r = 0; r < GravityProvider::num_radial_cells; r++) {
         for (int t = 0; t < GravityProvider::num_azimuthal_cells; t++) {
 
-            int i1 = (r * GravityProvider::num_azimuthal_cells) + t;
+            int i1 = disk->getCellIndex(r, t);
 
             double ar = 0;
             double at = 0;
 
-            int min_r = std::max(0, r - nearestNeighbours);
-            int max_r = min(r + nearestNeighbours, GravityProvider::num_radial_cells);
-            int  min_t = std::max(0, t - nearestNeighbours);
-            int  max_t = min(t + nearestNeighbours, GravityProvider::num_azimuthal_cells);
+            QTNode * child = segment[i1].node;
+            QTNode * node = child->parent;
 
-            for (int sr = min_r; sr < max_r; sr++) {
-                for (int st = min_t; st < max_t; st++) {
+            //while( node != nullptr ) {
+            for( int j = 0; j < 3; j++ ) {
 
-                    int i2 = (sr * GravityProvider::num_azimuthal_cells) + st;
+                for (int i = 0; i<4; i++) {
+                    if ( ( node->leaf[i] != nullptr ) &&
+                            (node->leaf[i] != child ) ) {
 
-                    if (i2 != i1) {
-                        double diff_theta = segment[i1].theta - segment[i2].theta;
+                        double diff_theta = segment[i1].theta - node->leaf[i]->theta;
                         double cos_diff_theta = cos(diff_theta);
-                        double diff_r = segment[i1].r - segment[i2].r;
+                        double diff_r = segment[i1].r - node->leaf[i]->r;
                         double exp_diff_r = exp(diff_r);
                         double distance = (exp_diff_r * exp_diff_r)
                                           + 1
@@ -47,12 +48,16 @@ void PolarBruteForceSelfGravityProvider::calculate() {
 
                         double a = 0.0;
                         if (distance != 0.0) {
-                            a = -G * segment[i2].density * segment[i2].area / distance;
+                            a = -G * node->leaf[i]->density * node->leaf[i]->area / distance;
                         }
                         ar += a * (exp_diff_r - cos_diff_theta);
                         at += a * sin(diff_theta);
+
+
                     }
                 }
+                child = node;
+                node = node->parent;
             }
 
             newSegment[i1].ar += ar;

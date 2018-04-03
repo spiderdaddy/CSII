@@ -13,7 +13,7 @@
 void Initialize(int argc, char *argv[]) {
 
     Disk *disk = new Disk(NUM_RADIAL_CELLS, NUM_AZIMUTHAL_CELLS, "/data/UZH/CSII/data1/density.data");
-//    Disk *disk = new Disk(NUM_RADIAL_CELLS, NUM_AZIMUTHAL_CELLS, "/data/UZH/CSII/data1/density_planet.data");
+    //Disk *disk = new Disk(NUM_RADIAL_CELLS, NUM_AZIMUTHAL_CELLS, "/data/UZH/CSII/data1/density_planet.data");
 
     InitializeGraphics(argc, argv, disk);
 

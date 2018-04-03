@@ -19,7 +19,12 @@ add_executable(csii
         #common/vboindexer.cpp
         GravityProvider/GravityProvider.cpp
         GravityProvider/PolarBruteForceSelfGravityProvider.cpp
+        GravityProvider/PolarTreeSelfGravityProvider.cpp
         GravityProvider/StellarGravityProvider.cpp
-        GravityProvider/CartesianBruteForceSelfGravityProvider.cpp QuadTree.cpp QuadTree.h)
+        GravityProvider/CartesianBruteForceSelfGravityProvider.cpp
+
+        QuadTree.cpp
+
+        )
 
 target_link_libraries(csii glut GL GLEW GLU )

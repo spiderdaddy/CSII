@@ -12,6 +12,7 @@
 #include "gravity.h"
 #include "CartesianBruteForceSelfGravityProvider.h"
 #include "PolarBruteForceSelfGravityProvider.h"
+#include "PolarTreeSelfGravityProvider.h"
 #include "StellarGravityProvider.h"
 
 double r2 = 1 / std::sqrt(2);
@@ -161,6 +162,7 @@ void MoveMass( Disk *disk ) {
         }
     }
     for (int i = 0; i < newSegment.size(); i++) {
+
         double p = 0.0, m = 0.0;
         for (auto &it : newSegment[i].pt) {
             p += it.m * it.v;
@@ -171,6 +173,7 @@ void MoveMass( Disk *disk ) {
             newSegment[i].vt = p / m;
         }
         newSegment[i].density = m / newSegment[i].area;
+
         p = 0.0, m = 0.0;
         for (auto &it : newSegment[i].pr) {
             p += it.m * it.v;
@@ -192,220 +195,31 @@ void ApplyBruteForceGravity( Disk * disk ) {
             disk->getSegment()
     );
 
-    GravityProvider *bfgp = new PolarBruteForceSelfGravityProvider(
-            disk->getNewSegment(),
-            disk->getSegment(),
-            disk->get_num_radial_cells(),
-            disk->get_num_azimuthal_cells(),
-            disk->getStellarMass()
+    GravityProvider *gp = new PolarTreeSelfGravityProvider( disk );
+
+    gp->calculate();
+
+//    GravityProvider *gp = new PolarBruteForceSelfGravityProvider( disk );
+//
+//    gp->calculate();
+
+    fprintf(
+            stdout,
+            "INFO: time required(s)=%f\n",
+            gp->getTime() / 1000.0
     );
 
-    bfgp->calculate();
 /*
-    GravityProvider *sgp = new StellarGravityProvider(
-            disk->getNewSegment(),
-            disk->getSegment(),
-            disk->get_num_radial_cells(),
-            disk->get_num_azimuthal_cells(),
-            disk->getStellarMass()
-    );
+    GravityProvider *sgp = new StellarGravityProvider( disk );
 
     sgp->calculate();
-
+*/
     ApplyAcceleration(
             disk->getNewSegment()
     );
 
     MoveMass( disk );
-*/
+
 }
 
 
-/*
-#define AFAC 0.25f
-#define BFAC 0.5f
-
-void ApplyXNearestNeighbourGravity() {
-
-    std::vector<double> dd(num_points * num_points, 0.0f);
-    int span = 3;
-
-    for (std::size_t t = 0; t < num_points; t++) {
-
-        for (std::size_t r = 0; r < num_points; r++) {
-
-            std::size_t i1 = (t * num_points) + r;
-
-            double dr = -1/(segment[i1].r*segment[i1].r);
-            double dt = 0;
-
-            for ( int st = -span; st < span; st++) {
-                for ( int sr = -span; sr < span; sr++) {
-
-                    std::size_t tr = max(0, glm::min((int) num_points, (int)r + sr));
-                    std::size_t tt = ((t + num_points + st) % num_points);
-                    std::size_t i2 = (tt * num_points) + tr;
-
-                    if ( i2 != i1 ) {
-
-                        double x = segment[i2].x - segment[i1].x;
-                        double y = segment[i2].y - segment[i1].y;
-                        double d = sqrt((x*x)*(y*y));
-                        double f = d * d;
-                        double nr = 0;
-                        if (f > 0) {
-                            nr = segment[i2].m / f;
-                        }
-                        double nt = 0;
-                        if ( d > 0) {
-                            nt = asin(y / d);
-                        }
-                        dt += nr * sin(nt);
-                        dr += nr * cos(nt);
-                    }
-                }
-            }
-
-            int n[8] = { -1, -1, -1, -1, -1, -1, -1, -1};
-            if ( r > 0 ) {
-                n[0] = (t * num_points) + r - 1;
-                n[1] = (((t+1) % num_points) * num_points) + r - 1;
-                n[7] = (((t + num_points - 1) % num_points) * num_points) + r - 1;
-            }
-            if ( r < num_points - 1 ) {
-                n[3] = (((t+1) % num_points) * num_points) + r + 1;
-                n[4] = (t * num_points) + r + 1;
-                n[5] = (((t + num_points - 1) % num_points) * num_points) + r + 1;
-
-            }
-            n[2] = (((t+1) % num_points) * num_points) + r;
-            n[6] = (((t + num_points - 1) % num_points) * num_points) + r;
-
-
-            double d = sqrt(dr*dr+dt*dt);
-            d = min( segment[i1].m, d );
-            dd[i1] -= d;
-
-            double pdr;
-            double pdt;
-            double pc = (glm::abs(dr) + glm::abs(dt));
-            if ( pc > 0 ) {
-                pdr = d * glm::abs(dr) / (glm::abs(dr) + glm::abs(dt));
-                pdt = d * glm::abs(dt) / (glm::abs(dr) + glm::abs(dt));
-            } else {
-                pdr = 0;
-                pdt = 0;
-            }
-
-            if ( dr > 0 ) {
-                if( n[3] >= 0 ) {
-                    dd[n[3]] += AFAC * pdr;
-                    dd[n[4]] += BFAC * pdr;
-                    dd[n[5]] += AFAC * pdr;
-                }
-            } else {
-                if( n[1] >= 0 ) {
-                    dd[n[1]] += AFAC * pdr;
-                    dd[n[0]] += BFAC * pdr;
-                    dd[n[7]] += AFAC * pdr;
-                }
-            }
-
-            if ( dt > 0 ) {
-                dd[n[2]] += BFAC * pdt;
-                if( n[1] >= 0 ) {
-
-                    dd[n[1]] += AFAC * pdt;
-                }
-                if( n[3] >= 0 ) {
-                    dd[n[3]] += AFAC * pdt;
-                }
-            } else {
-                if( n[7] >= 0 ) {
-                    dd[n[7]] += AFAC * pdt;
-                }
-                    if( n[5] >= 0 ) {
-                        dd[n[5]] += AFAC * pdt;
-                    }
-                dd[n[6]] += BFAC * pdt;
-            }
-
-        }
-    }
-
-    for ( int i = 0; i < newSegment.size(); i++) {
-        newSegment[i].m = max( 0.0, newSegment[i].m + 1e16*dd[i]);
-    }
-}
-
-void ApplyNearestNeighbourGravity() {
-
-    std::vector<double> dd(num_points * num_points, 0.0);
-
-
-    for (std::size_t t = 0; t < num_points; t++) {
-
-        for (std::size_t r = 1; r < num_points - 1; r++) {
-
-            std::size_t i = (t * num_points) + r;
-            std::size_t n[8];
-            n[0] = (t * num_points) + r - 1;
-            n[1] = (((t+1) % num_points) * num_points) + r - 1;
-            n[2] = (((t+1) % num_points) * num_points) + r;
-            n[3] = (((t+1) % num_points) * num_points) + r + 1;
-            n[4] = (t * num_points) + r + 1;
-            n[5] = (((t + num_points - 1) % num_points) * num_points) + r + 1;
-            n[6] = (((t + num_points - 1) % num_points) * num_points) + r;
-            n[7] = (((t + num_points - 1) % num_points) * num_points) + r - 1;
-
-            // radial component
-            double dr =   ( r2 * segment[n[3]].m + segment[n[4]].m + r2 * segment[n[5]].m )
-                       - ( r2 * segment[n[1]].m + segment[n[0]].m + r2 * segment[n[7]].m )
-                       - 10/(segment[i].r*segment[i].r);
-
-            // angular component
-            double dt =   ( r2 * segment[n[1]].m + segment[n[2]].m + r2 * segment[n[3]].m )
-                       - ( r2 * segment[n[5]].m + segment[n[6]].m + r2 * segment[n[7]].m );
-
-            double d = sqrt(dr*dr+dt*dt);
-            d = min( segment[i].m, d );
-            dd[i] -= d;
-
-            double pdr;
-            double pdt;
-            double pc = (glm::abs(dr) + glm::abs(dt));
-            if ( pc > 0 ) {
-                pdr = d * glm::abs(dr) / (glm::abs(dr) + glm::abs(dt));
-                pdt = d * glm::abs(dt) / (glm::abs(dr) + glm::abs(dt));
-            } else {
-                pdr = 0;
-                pdt = 0;
-            }
-            if ( dr > 0 ) {
-                dd[n[3]] += 0.25 * pdr;
-                dd[n[4]] += 0.50 * pdr;
-                dd[n[5]] += 0.25 * pdr;
-            } else {
-                dd[n[1]] += 0.25 * pdr;
-                dd[n[0]] += 0.50 * pdr;
-                dd[n[7]] += 0.25 * pdr;
-            }
-
-            if ( dt > 0 ) {
-                dd[n[1]] += 0.25 * pdt;
-                dd[n[2]] += 0.50 * pdt;
-                dd[n[3]] += 0.25 * pdt;
-            } else {
-                dd[n[7]] += 0.25 * pdt;
-                dd[n[6]] += 0.50 * pdt;
-                dd[n[5]] += 0.25 * pdt;
-            }
-
-        }
-    }
-
-    for ( int i = 0; i < newSegment.size(); i++) {
-        newSegment[i].m = max( 0.0, newSegment[i].m + dd[i]);
-    }
-}
-*/

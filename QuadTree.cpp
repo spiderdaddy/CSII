@@ -6,11 +6,11 @@
 #include <cstring>
 #include <cmath>
 #include <iostream>
-#include "QuadTree.h"
 #include <bits/stdc++.h>
 
-using namespace std;
+#include "QuadTree.h"
 
+using namespace std;
 
 
 QTNode::QTNode(QTNode *p, int rs, int re, int ts, int te, unsigned tree_l) {
@@ -24,13 +24,14 @@ QTNode::QTNode(QTNode *p, int rs, int re, int ts, int te, unsigned tree_l) {
     t_start = ts;
     t_end = te;
     tree_level = tree_l;
+    area = density = r = theta = 0;
 }
 
 ostream &operator<<(ostream &os, const QTNode *node) {
     os << (void *) node << ": "
        << node->tree_level;
 
-    for ( int i = 0 ; i < node->tree_level; i++) {
+    for (int i = 0; i < node->tree_level; i++) {
         os << "|   ";
     }
 
@@ -38,7 +39,8 @@ ostream &operator<<(ostream &os, const QTNode *node) {
        << (void *) node->leaf[0] << ", " << (void *) node->leaf[1] << ", " << (void *) node->leaf[2] << ", "
        << (void *) node->leaf[3] << "), ("
        << node->r_start << ", " << node->r_end << "), ("
-       << node->t_start << ", " << node->t_end << ")";
+       << node->t_start << ", " << node->t_end << "), ("
+       << node->area << ", " << node->density << ", " << node->r << ", " << node->theta << ")";
     return os;
 }
 
@@ -49,11 +51,11 @@ QuadTree::QuadTree(unsigned num_r, unsigned num_a) {
 
     unsigned largest_axis = max(num_radial_points, num_azimuthal_points);
 
-    while (pow(2, max_level+1) < largest_axis) {
+    while (pow(2, max_level + 1) < largest_axis) {
         max_level++;
     }
 
-    head = createNode((QTNode *) nullptr, 0, pow(2, max_level+1) , 0,pow(2, max_level+1), 0);
+    head = createNode((QTNode *) nullptr, 0, pow(2, max_level + 1) - 1, 0, pow(2, max_level + 1) - 1, 0);
 
 };
 
@@ -66,7 +68,7 @@ QTNode *QuadTree::createNode(QTNode *parent, int r_start, int r_end, int t_start
         (t_start < num_azimuthal_points) &&
         (tree_level <= max_level + 1)) {
 
-        unsigned step = (unsigned) pow(2, max(int(max_level) - (int)tree_level, 0));
+        unsigned step = (unsigned) pow(2, max(int(max_level) - (int) tree_level, 0));
 
         node = new QTNode(parent, r_start, r_end, t_start, t_end, tree_level);
 
@@ -100,6 +102,7 @@ QTNode *QuadTree::createNode(QTNode *parent, int r_start, int r_end, int t_start
     return node;
 }
 
+
 void printOneNode(QTNode *node) {
     cout << node << "\n";
     if (node != nullptr) {
@@ -113,21 +116,28 @@ void printOneNode(QTNode *node) {
 
 void QuadTree::printNodes() {
 
-  std::streambuf *psbuf, *backup;
-  std::ofstream filestr;
-  filestr.open ("/tmp/QuadTree.txt");
+    std::streambuf *psbuf, *backup;
+    std::ofstream filestr;
+    string filename ("/tmp/QuadTree.txt");
+    filestr.open(filename);
 
-  backup = std::cout.rdbuf();     // back up cout's streambuf
+    backup = std::cout.rdbuf();     // back up cout's streambuf
 
-  psbuf = filestr.rdbuf();        // get file's streambuf
-  std::cout.rdbuf(psbuf);         // assign streambuf to cout
+    psbuf = filestr.rdbuf();        // get file's streambuf
+    std::cout.rdbuf(psbuf);         // assign streambuf to cout
 
-  printOneNode(head);
+    printOneNode(head);
 
-  std::cout.rdbuf(backup);        // restore cout's original streambuf
+    std::cout.rdbuf(backup);        // restore cout's original streambuf
 
-  filestr.close();
+    filestr.close();
+
+    cout << "INFO: QuadTree written to " << filename;
 
 
+}
+
+QTNode *QuadTree::getHead() const {
+    return head;
 }
 

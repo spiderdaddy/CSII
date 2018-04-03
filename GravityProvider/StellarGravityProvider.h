@@ -10,13 +10,7 @@
 class StellarGravityProvider : public GravityProvider {
 public:
 
-    StellarGravityProvider (
-            std::vector<Disk::Segment> *pNS,
-    std::vector<Disk::Segment> *pS,
-    int num_r,
-    int num_a,
-    double * sm
-    ) : GravityProvider ( pNS, pS, num_r, num_a, sm ) {}
+    StellarGravityProvider ( Disk * d ) : GravityProvider ( d ) {}
 
     void calculate();
 };

@@ -12,13 +12,7 @@ class PolarBruteForceSelfGravityProvider : public GravityProvider {
 
 public:
 
-    PolarBruteForceSelfGravityProvider (
-            std::vector<Disk::Segment> *pNS,
-            std::vector<Disk::Segment> *pS,
-            int num_r,
-            int num_a,
-            double * sm
-    ) : GravityProvider ( pNS, pS, num_r, num_a, sm ) {}
+    PolarBruteForceSelfGravityProvider ( Disk * d ) : GravityProvider ( d ) {}
 
     void calculate();
 };

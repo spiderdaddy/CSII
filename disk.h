@@ -71,6 +71,7 @@ public:
         long neighbour[8] = {-1, -1, -1, -1, -1, -1, -1, -1}; //nearest neighbours
         std::vector<P> pr;
         std::vector<P> pt;
+        QTNode * node;
     };
 
     void PrintPoints();
@@ -89,7 +90,21 @@ public:
 
     std::vector<SegmentColours> getGravityColours();
 
+    int getCellIndex(int r, int theta);
 
+    double getDensity( int r, int theta );
+
+    double getArea( int r, int theta );
+
+    double getRLower( int r, int theta );
+
+    double getRUpper( int r, int theta );
+
+    double getThetaLower( int r, int theta );
+
+    double getThetaUpper( int r, int theta );
+
+    void setTreeNode( int r, int theta, QTNode * node);
 
     std::vector<Segment> *getSegment();
 
@@ -111,10 +126,15 @@ public:
 
     double get_escape_mass();
 
+    QuadTree *getQuadTree() const;
+    QTNode *calcTreeValues(QTNode *parent, QTNode *node);
+
+
+
 private:
     unsigned int num_radial_cells;
     unsigned int num_azimuthal_cells;
-    double stellar_mass = M_SUN;
+    double stellar_mass = M_SUN / 10;
     double escape_mass = 0;
 
     std::vector<Disk::SegmentVertices> segmentVertices;
@@ -126,9 +146,15 @@ private:
     double maximum_density;
     QuadTree* qt;
 
+private:
+
     std::vector<Disk::SegmentVertices> gravityVertices;
     std::vector<Disk::SegmentColours> gravityColours;
 
+    double r_ratio;
+    double sqrt_r_ratio;
+    double theta_step;
+    double theta_step_2;
 
 };
 

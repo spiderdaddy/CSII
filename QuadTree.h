@@ -6,6 +6,7 @@
 #define CSII_QUADTREE_H
 
 #include <iostream>
+
 using namespace std;
 
 struct QTNode {
@@ -20,6 +21,10 @@ public:
     int t_start;
     int t_end;
     unsigned tree_level;
+    double area;
+    double density;
+    double r;
+    double theta;
 };
 
 class QuadTree {
@@ -35,6 +40,8 @@ private:
     unsigned num_radial_points;
     unsigned num_azimuthal_points;
     QTNode *head;
+public:
+    QTNode *getHead() const;
 
 };
 
