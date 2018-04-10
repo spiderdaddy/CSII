@@ -19,7 +19,8 @@ add_executable(csii
         #common/vboindexer.cpp
         GravityProvider/GravityProvider.cpp
         GravityProvider/PolarBruteForceSelfGravityProvider.cpp
-        GravityProvider/PolarTreeSelfGravityProvider.cpp
+        GravityProvider/SimplePolarTreeSelfGravityProvider.cpp
+        GravityProvider/ExclusionPolarTreeSelfGravityProvider.cpp
         GravityProvider/StellarGravityProvider.cpp
         GravityProvider/CartesianBruteForceSelfGravityProvider.cpp
 

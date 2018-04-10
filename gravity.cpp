@@ -12,7 +12,8 @@
 #include "gravity.h"
 #include "CartesianBruteForceSelfGravityProvider.h"
 #include "PolarBruteForceSelfGravityProvider.h"
-#include "PolarTreeSelfGravityProvider.h"
+#include "SimplePolarTreeSelfGravityProvider.h"
+#include "ExclusionPolarTreeSelfGravityProvider.h"
 #include "StellarGravityProvider.h"
 
 double r2 = 1 / std::sqrt(2);
@@ -195,7 +196,7 @@ void ApplyBruteForceGravity( Disk * disk ) {
             disk->getSegment()
     );
 
-    GravityProvider *gp = new PolarTreeSelfGravityProvider( disk );
+    GravityProvider *gp = new ExclusionPolarTreeSelfGravityProvider( disk );
 
     gp->calculate();
 

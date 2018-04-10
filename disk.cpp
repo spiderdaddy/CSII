@@ -193,7 +193,7 @@ Disk::Disk( unsigned int num_r, unsigned int num_theta, std::string filename ) {
     }
 
     qt = new QuadTree(num_radial_cells, num_azimuthal_cells);
-    //qt->printNodes();
+    qt->printNodes();
 
     fprintf(
             stdout,
@@ -332,6 +332,7 @@ std::vector<double> Disk::loadDensities( string filename ) {
         while (myfile.good()) {
             if( line.size() > 0 ) {
                 double density = stod(line);
+                //density = 0.01;
                 densities.push_back(density);
             }
             getline( myfile, line );
@@ -377,13 +378,13 @@ QuadTree *Disk::getQuadTree() const {
 QTNode *Disk::calcTreeValues(QTNode *parent, QTNode *node) {
 
     // If this node is a single cell, then just set the density and return
-    if ( (node->r_start == node->r_end)
-            && (node->t_start == node->t_end) ) {
-        node->density = this->getDensity( node->r_start, node->t_start );
-        node->area = this->getArea( node->r_start, node->t_start );
-        node->r = ( this->getRLower( node->r_start, node->t_start ) + this->getRUpper( node->r_end, node->t_end ) ) / 2;
-        node->theta = ( this->getThetaLower( node->r_start, node->t_start ) + this->getThetaUpper( node->r_end, node->t_end ) ) / 2;
-        this->setTreeNode( node->r_start, node->t_start, node );
+    if ( (node->r_start == node->r_end) &&
+         (node->t_start == node->t_end) ) {
+        node->density = segment[getCellIndex( node->r_start, node->t_start )].density;
+        node->area = segment[getCellIndex( node->r_start, node->t_start )].area;
+        node->r = segment[getCellIndex( node->r_start, node->t_start )].r;
+        node->theta = segment[getCellIndex( node->r_start, node->t_start )].theta;
+        segment[getCellIndex( node->r_start, node->t_start )].node =  node;
     } else {
 
         int cells = 0;
@@ -401,8 +402,8 @@ QTNode *Disk::calcTreeValues(QTNode *parent, QTNode *node) {
 
         node->density /= cells;
 
-        node->r = ( this->getRLower( node->r_start, node->t_start ) + this->getRUpper( node->r_end, node->t_end ) ) / 2;
-        node->theta = ( this->getThetaLower( node->r_start, node->t_start ) + this->getThetaUpper( node->r_end, node->t_end ) ) / 2;
+        node->r = ( segment[getCellIndex( node->r_start, node->t_start )].r + segment[getCellIndex( node->r_end, node->t_end )].r ) / 2.0;
+        node->theta = ( segment[getCellIndex( node->r_start, node->t_start )].theta + segment[getCellIndex( node->r_end, node->t_end )].theta ) / 2.0;
 
     }
     return node;
