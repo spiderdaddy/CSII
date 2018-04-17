@@ -69,19 +69,19 @@ QuadTree::QuadTree(unsigned num_r, unsigned num_a) {
     head = createNode((QTNode *) nullptr, 0, pow(2, max_level) - 1, 0, pow(2, max_level) - 1, 0);
 
     for (std::vector<QTNode *> nodes : levelVector) {
-        for (QTNode *node : nodes) {
+        for (QTNode *node : nodes ) {
             node->neighbour = vector<QTNode *>();
-            for (QTNode *neighbour : nodes) {
-                if (   ( (neighbour->r_end == node->r_start - 1) && (neighbour->t_end == ((( node->t_start + num_azimuthal_points ) - 1) % num_azimuthal_points)) )
-                    || ( (neighbour->r_end == node->r_start - 1) && (neighbour->t_end == node->t_end) )
-                    || ( (neighbour->r_end == node->r_start - 1) && (neighbour->t_start == ((node->t_end + 1)%num_azimuthal_points) ) )
-                    || ( (neighbour->r_start == node->r_start) && (neighbour->t_end == (((node->t_start + num_azimuthal_points ) - 1) % num_azimuthal_points) ) )
-                    || ( (neighbour->r_start == node->r_start) && (neighbour->t_start == ((node->t_end + 1)%num_azimuthal_points) ) )
-                    || ( (neighbour->r_start == node->r_end + 1) && (neighbour->t_end == (((node->t_start + num_azimuthal_points ) - 1) % num_azimuthal_points) ) )
-                    || ( (neighbour->r_start == node->r_end + 1) && (neighbour->t_end == node->t_end) )
-                    || ( (neighbour->r_start == node->r_end + 1) && (neighbour->t_start == ((node->t_end + 1)%num_azimuthal_points) ) )
+            for (auto neighbour = nodes.begin(); (neighbour != nodes.end()) && (node->neighbour.size() < 8 ); neighbour++ ) {
+                if (   ( ((*neighbour)->r_end == node->r_start - 1) && ((*neighbour)->t_end == ((( node->t_start + num_azimuthal_points ) - 1) % num_azimuthal_points)) )
+                    || ( ((*neighbour)->r_end == node->r_start - 1) && ((*neighbour)->t_end == node->t_end) )
+                    || ( ((*neighbour)->r_end == node->r_start - 1) && ((*neighbour)->t_start == ((node->t_end + 1)%num_azimuthal_points) ) )
+                    || ( ((*neighbour)->r_start == node->r_start) && ((*neighbour)->t_end == (((node->t_start + num_azimuthal_points ) - 1) % num_azimuthal_points) ) )
+                    || ( ((*neighbour)->r_start == node->r_start) && ((*neighbour)->t_start == ((node->t_end + 1)%num_azimuthal_points) ) )
+                    || ( ((*neighbour)->r_start == node->r_end + 1) && ((*neighbour)->t_end == (((node->t_start + num_azimuthal_points ) - 1) % num_azimuthal_points) ) )
+                    || ( ((*neighbour)->r_start == node->r_end + 1) && ((*neighbour)->t_end == node->t_end) )
+                    || ( ((*neighbour)->r_start == node->r_end + 1) && ((*neighbour)->t_start == ((node->t_end + 1)%num_azimuthal_points) ) )
                     ) {
-                    node->neighbour.push_back(neighbour);
+                    node->neighbour.push_back(*neighbour);
                 }
             }
         }

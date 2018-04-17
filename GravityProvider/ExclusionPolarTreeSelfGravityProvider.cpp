@@ -67,7 +67,7 @@ void ExclusionPolarTreeSelfGravityProvider::calculate() {
 
             int level = node->tree_level;
 
-            int resolution = 3;
+            int resolution = 4;
             while (level > resolution ) {
 
                 // Calc all lowest level in neighbours of the parent
@@ -75,9 +75,12 @@ void ExclusionPolarTreeSelfGravityProvider::calculate() {
                     for (int i = 0; i < 4; i++) {
                         if ( (cell->leaf[i] != nullptr) &&
                              !isExcluded(cell->leaf[i], child->neighbour) )   {
+                            for (int j = 0; j < 4; j++) {
+                                if (cell->leaf[i]->leaf[j] != nullptr) {
 
-                            calcGravityForNode(i1, cell->leaf[i], segment, ar, at);
-
+                                    calcGravityForNode(i1, cell->leaf[i]->leaf[j], segment, ar, at);
+                                }
+                            }
                         }
                     }
                 }
@@ -89,17 +92,20 @@ void ExclusionPolarTreeSelfGravityProvider::calculate() {
             }
 
             // Now calc everything else at the level we are at
-            for (QTNode *cell : disk->getQuadTree()->getLevelVector(level+1) ) {
+/*            for (QTNode *cell : disk->getQuadTree()->getLevelVector(level) ) {
                 for (int i = 0; i < 4; i++) {
                     if ( (cell->leaf[i] != nullptr) &&
                          !isExcluded(cell->leaf[i], child->neighbour) )   {
+                        for (int j = 0; j < 4; j++) {
+                            if (cell->leaf[i]->leaf[j] != nullptr) {
 
-                        calcGravityForNode(i1, cell->leaf[i], segment, ar, at);
-
+                                calcGravityForNode(i1, cell->leaf[i]->leaf[j], segment, ar, at);
+                            }
+                        }
                     }
                 }
             }
-
+*/
 
             newSegment[i1].ar += ar;
             newSegment[i1].at += at;

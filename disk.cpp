@@ -402,7 +402,8 @@ QTNode *Disk::calcTreeValues(QTNode *parent, QTNode *node) {
 
         node->density /= cells;
 
-        node->r = ( segment[getCellIndex( node->r_start, node->t_start )].r + segment[getCellIndex( node->r_end, node->t_end )].r ) / 2.0;
+        // ?????  check the transform here
+        node->r = segment[getCellIndex( node->r_start, node->t_start )].r + (( segment[getCellIndex( node->r_end, node->t_end )].r - segment[getCellIndex( node->r_start, node->t_start )].r ) * .707 );
         node->theta = ( segment[getCellIndex( node->r_start, node->t_start )].theta + segment[getCellIndex( node->r_end, node->t_end )].theta ) / 2.0;
 
     }
