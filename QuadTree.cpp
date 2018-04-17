@@ -41,10 +41,10 @@ ostream &operator<<(ostream &os, const QTNode *node) {
        << (void *) node->leaf[3] << "), ("
        << node->r_start << ", " << node->r_end << "), ("
        << node->t_start << ", " << node->t_end << "), ("
-       << node->area << ", " << node->density << ", " << node->r << ", " << node->theta << "), (" ;
+       << node->area << ", " << node->density << ", " << node->r << ", " << node->theta << "), (";
 
-    for (QTNode *neighbour : node->neighbour ) {
-        cout << (void*)neighbour << ",";
+    for (QTNode *neighbour : node->neighbour) {
+        cout << (void *) neighbour << ",";
     }
     cout << ")";
     return os;
@@ -69,18 +69,25 @@ QuadTree::QuadTree(unsigned num_r, unsigned num_a) {
     head = createNode((QTNode *) nullptr, 0, pow(2, max_level) - 1, 0, pow(2, max_level) - 1, 0);
 
     for (std::vector<QTNode *> nodes : levelVector) {
-        for (QTNode *node : nodes ) {
+        for (QTNode *node : nodes) {
             node->neighbour = vector<QTNode *>();
-            for (auto neighbour = nodes.begin(); (neighbour != nodes.end()) && (node->neighbour.size() < 8 ); neighbour++ ) {
-                if (   ( ((*neighbour)->r_end == node->r_start - 1) && ((*neighbour)->t_end == ((( node->t_start + num_azimuthal_points ) - 1) % num_azimuthal_points)) )
-                    || ( ((*neighbour)->r_end == node->r_start - 1) && ((*neighbour)->t_end == node->t_end) )
-                    || ( ((*neighbour)->r_end == node->r_start - 1) && ((*neighbour)->t_start == ((node->t_end + 1)%num_azimuthal_points) ) )
-                    || ( ((*neighbour)->r_start == node->r_start) && ((*neighbour)->t_end == (((node->t_start + num_azimuthal_points ) - 1) % num_azimuthal_points) ) )
-                    || ( ((*neighbour)->r_start == node->r_start) && ((*neighbour)->t_start == ((node->t_end + 1)%num_azimuthal_points) ) )
-                    || ( ((*neighbour)->r_start == node->r_end + 1) && ((*neighbour)->t_end == (((node->t_start + num_azimuthal_points ) - 1) % num_azimuthal_points) ) )
-                    || ( ((*neighbour)->r_start == node->r_end + 1) && ((*neighbour)->t_end == node->t_end) )
-                    || ( ((*neighbour)->r_start == node->r_end + 1) && ((*neighbour)->t_start == ((node->t_end + 1)%num_azimuthal_points) ) )
-                    ) {
+            for (auto neighbour = nodes.begin();
+                 (neighbour != nodes.end()) && (node->neighbour.size() < 8); neighbour++) {
+                if ((((*neighbour)->r_end == node->r_start - 1) &&
+                     ((*neighbour)->t_end == (((node->t_start + num_azimuthal_points) - 1) % num_azimuthal_points)))
+                    || (((*neighbour)->r_end == node->r_start - 1) && ((*neighbour)->t_end == node->t_end))
+                    || (((*neighbour)->r_end == node->r_start - 1) &&
+                        ((*neighbour)->t_start == ((node->t_end + 1) % num_azimuthal_points)))
+                    || (((*neighbour)->r_start == node->r_start) &&
+                        ((*neighbour)->t_end == (((node->t_start + num_azimuthal_points) - 1) % num_azimuthal_points)))
+                    || (((*neighbour)->r_start == node->r_start) &&
+                        ((*neighbour)->t_start == ((node->t_end + 1) % num_azimuthal_points)))
+                    || (((*neighbour)->r_start == node->r_end + 1) &&
+                        ((*neighbour)->t_end == (((node->t_start + num_azimuthal_points) - 1) % num_azimuthal_points)))
+                    || (((*neighbour)->r_start == node->r_end + 1) && ((*neighbour)->t_end == node->t_end))
+                    || (((*neighbour)->r_start == node->r_end + 1) &&
+                        ((*neighbour)->t_start == ((node->t_end + 1) % num_azimuthal_points)))
+                        ) {
                     node->neighbour.push_back(*neighbour);
                 }
             }
@@ -88,109 +95,109 @@ QuadTree::QuadTree(unsigned num_r, unsigned num_a) {
     }
 }
 
-    QTNode *QuadTree::createNode(QTNode *parent, int r_start, int r_end, int t_start, int t_end, unsigned tree_level) {
+QTNode *QuadTree::createNode(QTNode *parent, int r_start, int r_end, int t_start, int t_end, unsigned tree_level) {
 
-        QTNode *node = nullptr;
+    QTNode *node = nullptr;
 
-        // If this node is outside the range don't create it and return null
-        if ((r_start < num_radial_points) &&
-            (t_start < num_azimuthal_points) &&
-            (tree_level <= max_level + 1)) {
+    // If this node is outside the range don't create it and return null
+    if ((r_start < num_radial_points) &&
+        (t_start < num_azimuthal_points) &&
+        (tree_level <= max_level + 1)) {
 
-            unsigned step = (unsigned) pow(2, max(int(max_level) - (int) tree_level - 1, 0));
+        unsigned step = (unsigned) pow(2, max(int(max_level) - (int) tree_level - 1, 0));
 
-            node = new QTNode(parent, r_start, r_end, t_start, t_end, tree_level);
-            levelVector[tree_level].push_back(node);
+        node = new QTNode(parent, r_start, r_end, t_start, t_end, tree_level);
+        levelVector[tree_level].push_back(node);
 
-            // if this node is a single cell then leave the leaves null
-            if ((r_start < r_end) ||
-                (t_start < t_end)) {
+        // if this node is a single cell then leave the leaves null
+        if ((r_start < r_end) ||
+            (t_start < t_end)) {
 
-                node->leaf[0] = createNode(node,
-                                           r_start, r_start + step - 1,
-                                           t_start, t_start + step - 1,
-                                           tree_level + 1);
+            node->leaf[0] = createNode(node,
+                                       r_start, r_start + step - 1,
+                                       t_start, t_start + step - 1,
+                                       tree_level + 1);
 
-                node->leaf[1] = createNode(node,
-                                           r_start + step, r_end,
-                                           t_start, t_start + step - 1,
-                                           tree_level + 1);
+            node->leaf[1] = createNode(node,
+                                       r_start + step, r_end,
+                                       t_start, t_start + step - 1,
+                                       tree_level + 1);
 
-                node->leaf[2] = createNode(node,
-                                           r_start, r_start + step - 1,
-                                           t_start + step, t_end,
-                                           tree_level + 1);
+            node->leaf[2] = createNode(node,
+                                       r_start, r_start + step - 1,
+                                       t_start + step, t_end,
+                                       tree_level + 1);
 
-                node->leaf[3] = createNode(node,
-                                           r_start + step, r_end,
-                                           t_start + step, t_end,
-                                           tree_level + 1);
-
-
-            }
-        }
-        return node;
-    }
+            node->leaf[3] = createNode(node,
+                                       r_start + step, r_end,
+                                       t_start + step, t_end,
+                                       tree_level + 1);
 
 
-    void QuadTree::printOneNode(QTNode *node) {
-        cout << node << "\n";
-        if (node != nullptr) {
-            for (int i = 0; i < 4; i++) {
-                if (node->leaf[i] != nullptr) {
-                    printOneNode(node->leaf[i]);
-                }
-            }
         }
     }
+    return node;
+}
 
-    void QuadTree::printNodesPerLevel() {
-        int level = 0;
-        for (std::vector<QTNode *> nodes : levelVector) {
-            cout << "Level:" << level++ << "\n";
-            int linebreak = 0;
-            for (QTNode *node : nodes) {
-                cout << (void *) node << ",";
-                if (linebreak++ > 14) {
-                    cout << "\n";
-                    linebreak = 0;
-                }
+
+void QuadTree::printOneNode(QTNode *node) {
+    cout << node << "\n";
+    if (node != nullptr) {
+        for (int i = 0; i < 4; i++) {
+            if (node->leaf[i] != nullptr) {
+                printOneNode(node->leaf[i]);
             }
-            cout << "\n";
         }
-        level++;
-
     }
+}
 
-    void QuadTree::printNodes() {
-
-        std::streambuf *psbuf, *backup;
-        std::ofstream filestr;
-        string filename("/tmp/QuadTree.txt");
-        filestr.open(filename);
-
-        backup = std::cout.rdbuf();     // back up cout's streambuf
-
-        psbuf = filestr.rdbuf();        // get file's streambuf
-        std::cout.rdbuf(psbuf);         // assign streambuf to cout
-
-        printOneNode(head);
-        printNodesPerLevel();
-
-        std::cout.rdbuf(backup);        // restore cout's original streambuf
-
-        filestr.close();
-
-        cout << "INFO: QuadTree written to " << filename;
-
-
+void QuadTree::printNodesPerLevel() {
+    int level = 0;
+    for (std::vector<QTNode *> nodes : levelVector) {
+        cout << "Level:" << level++ << "\n";
+        int linebreak = 0;
+        for (QTNode *node : nodes) {
+            cout << (void *) node << ",";
+            if (linebreak++ > 14) {
+                cout << "\n";
+                linebreak = 0;
+            }
+        }
+        cout << "\n";
     }
+    level++;
 
-    QTNode *QuadTree::getHead() const {
-        return head;
-    }
+}
 
-std::vector<QTNode*> QuadTree::getLevelVector(int level) {
+void QuadTree::printNodes() {
+
+    std::streambuf *psbuf, *backup;
+    std::ofstream filestr;
+    string filename("/tmp/QuadTree.txt");
+    filestr.open(filename);
+
+    backup = std::cout.rdbuf();     // back up cout's streambuf
+
+    psbuf = filestr.rdbuf();        // get file's streambuf
+    std::cout.rdbuf(psbuf);         // assign streambuf to cout
+
+    printOneNode(head);
+    printNodesPerLevel();
+
+    std::cout.rdbuf(backup);        // restore cout's original streambuf
+
+    filestr.close();
+
+    cout << "INFO: QuadTree written to " << filename;
+
+
+}
+
+QTNode *QuadTree::getHead() const {
+    return head;
+}
+
+std::vector<QTNode *> QuadTree::getLevelVector(int level) {
     return levelVector[level];
 
 }

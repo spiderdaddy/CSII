@@ -8,8 +8,11 @@
 #include "ExclusionPolarTreeSelfGravityProvider.h"
 
 
-bool isExcluded( QTNode * cell, vector<QTNode*> exclusion ) {
-    for (QTNode *e : exclusion ) {
+bool isExcluded( QTNode * cell, QTNode * node ) {
+    if (cell == node) {
+        return true;
+    }
+    for (QTNode *e : node->neighbour ) {
         if ( e == cell ) {
             return true;
         }
@@ -28,8 +31,10 @@ void ExclusionPolarTreeSelfGravityProvider::calculate() {
     std::vector<Disk::Segment> &segment = *GravityProvider::pSegment;
 
     // Calculate acceleration for all points
-    for (int r = 0; r < GravityProvider::num_radial_cells; r++) {
-        for (int t = 0; t < GravityProvider::num_azimuthal_cells; t++) {
+//    for (int r = GravityProvider::num_radial_cells / 2 - 10; r < GravityProvider::num_radial_cells / 2 +10; r++) {
+//        for (int t = GravityProvider::num_azimuthal_cells * 7/8 - 10; t < GravityProvider::num_azimuthal_cells * 7/8 +10; t++) {
+  for (int r = 0; r < GravityProvider::num_radial_cells; r++) {
+      for (int t = 0; t < GravityProvider::num_azimuthal_cells; t++) {
 
             int i1 = disk->getCellIndex(r, t);
 
@@ -67,14 +72,14 @@ void ExclusionPolarTreeSelfGravityProvider::calculate() {
 
             int level = node->tree_level;
 
-            int resolution = 4;
+            int resolution = 2;
             while (level > resolution ) {
 
                 // Calc all lowest level in neighbours of the parent
                 for (QTNode *cell : node->neighbour ) {
                     for (int i = 0; i < 4; i++) {
                         if ( (cell->leaf[i] != nullptr) &&
-                             !isExcluded(cell->leaf[i], child->neighbour) )   {
+                             !isExcluded(cell->leaf[i], child) )   {
                             for (int j = 0; j < 4; j++) {
                                 if (cell->leaf[i]->leaf[j] != nullptr) {
 
@@ -92,10 +97,10 @@ void ExclusionPolarTreeSelfGravityProvider::calculate() {
             }
 
             // Now calc everything else at the level we are at
-/*            for (QTNode *cell : disk->getQuadTree()->getLevelVector(level) ) {
+            for (QTNode *cell : disk->getQuadTree()->getLevelVector(level) ) {
                 for (int i = 0; i < 4; i++) {
                     if ( (cell->leaf[i] != nullptr) &&
-                         !isExcluded(cell->leaf[i], child->neighbour) )   {
+                         !isExcluded(cell->leaf[i], child) )   {
                         for (int j = 0; j < 4; j++) {
                             if (cell->leaf[i]->leaf[j] != nullptr) {
 
@@ -105,7 +110,7 @@ void ExclusionPolarTreeSelfGravityProvider::calculate() {
                     }
                 }
             }
-*/
+
 
             newSegment[i1].ar += ar;
             newSegment[i1].at += at;
@@ -122,8 +127,12 @@ void ExclusionPolarTreeSelfGravityProvider::calculate() {
     stopTimer();
 }
 
-void ExclusionPolarTreeSelfGravityProvider::calcGravityForNode(int i, QTNode *node, vector<Disk::Segment> &segment,
-                                                      double &ar, double &at) const {
+void ExclusionPolarTreeSelfGravityProvider::calcGravityForNode(
+        int i,
+        QTNode *node,
+        vector<Disk::Segment> &segment,
+        double &ar,
+        double &at) const {
     double diff_theta = segment[i].theta - node->theta;
     double cos_diff_theta = cos(diff_theta);
     double diff_r = segment[i].r - node->r;
