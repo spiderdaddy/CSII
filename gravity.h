@@ -7,7 +7,7 @@
 
 #include "disk.h"
 
-void ApplyBruteForceGravity( Disk *disk );
+void ApplyGravity(Disk *disk);
 
 //void ApplyXNearestNeighbourGravity();
 //void ApplyNearestNeighbourGravity();

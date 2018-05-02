@@ -354,6 +354,18 @@ std::vector<double> Disk::loadDensities( string filename ) {
     return densities;
 }
 
+void Disk::saveGravities( string filename ) {
+    ofstream myfile(filename);
+    if (myfile.is_open()) {
+
+        for( int i = 0; i < segment.size(); i++ ) {
+            myfile << segment[i].ar << "," << segment[i].at << "\n";
+        }
+        myfile.close();
+    } else cout << "Unable to open file";
+
+}
+
 unsigned int Disk::get_num_radial_cells() {
     return num_radial_cells;
 }

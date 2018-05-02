@@ -121,7 +121,7 @@ void RenderFunction(void) {
     glFlush();
     glutSwapBuffers();
 
-    ApplyBruteForceGravity(disk);
+    ApplyGravity(disk);
 
     disk->swapSegments();
 

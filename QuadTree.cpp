@@ -55,8 +55,8 @@ QuadTree::QuadTree(unsigned num_r, unsigned num_a) {
     num_radial_points = num_r;
     num_azimuthal_points = num_a;
 
+    // Find out the maximum number of levels
     unsigned largest_axis = max(num_radial_points, num_azimuthal_points);
-
     while (pow(2, max_level) < largest_axis) {
         max_level++;
     }
@@ -66,8 +66,10 @@ QuadTree::QuadTree(unsigned num_r, unsigned num_a) {
         levelVector.push_back(std::vector<QTNode *>());
     }
 
+    // Recurseively create the node structure
     head = createNode((QTNode *) nullptr, 0, pow(2, max_level) - 1, 0, pow(2, max_level) - 1, 0);
 
+    // Iterate through all nodes and find their neighbours
     for (std::vector<QTNode *> nodes : levelVector) {
         for (QTNode *node : nodes) {
             node->neighbour = vector<QTNode *>();

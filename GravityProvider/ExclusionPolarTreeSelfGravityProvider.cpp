@@ -72,7 +72,7 @@ void ExclusionPolarTreeSelfGravityProvider::calculate() {
 
             int level = node->tree_level;
 
-            int resolution = 2;
+            int resolution = 8;
             while (level > resolution ) {
 
                 // Calc all lowest level in neighbours of the parent

@@ -129,6 +129,8 @@ public:
     QuadTree *getQuadTree() const;
     QTNode *calcTreeValues(QTNode *parent, QTNode *node);
 
+    void saveGravities( string filename );
+
 
 
 private:

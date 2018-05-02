@@ -189,7 +189,7 @@ void MoveMass( Disk *disk ) {
 
 }
 
-void ApplyBruteForceGravity( Disk * disk ) {
+void ApplyGravity(Disk *disk) {
 
     initialiseAcceleration(
             disk->getNewSegment(),
@@ -197,8 +197,10 @@ void ApplyBruteForceGravity( Disk * disk ) {
     );
 
     GravityProvider *gp = new ExclusionPolarTreeSelfGravityProvider( disk );
+//    GravityProvider *gp = new PolarBruteForceSelfGravityProvider( disk );
 
     gp->calculate();
+    disk->saveGravities( "PolarTree-res-8.csv");
 
 //    GravityProvider *gp = new PolarBruteForceSelfGravityProvider( disk );
 //
@@ -215,12 +217,13 @@ void ApplyBruteForceGravity( Disk * disk ) {
 
     sgp->calculate();
 */
+    /*
     ApplyAcceleration(
             disk->getNewSegment()
     );
 
     MoveMass( disk );
-
+    */
 }
 
 
