@@ -358,8 +358,8 @@ void Disk::saveGravities( string filename ) {
     ofstream myfile(filename);
     if (myfile.is_open()) {
 
-        for( int i = 0; i < segment.size(); i++ ) {
-            myfile << segment[i].ar << "," << segment[i].at << "\n";
+        for( int i = 0; i < newSegment.size(); i++ ) {
+            myfile << newSegment[i].ar << "," << newSegment[i].at << "\n";
         }
         myfile.close();
     } else cout << "Unable to open file";

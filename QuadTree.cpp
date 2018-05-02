@@ -32,8 +32,10 @@ ostream &operator<<(ostream &os, const QTNode *node) {
     os << (void *) node << ": "
        << node->tree_level;
 
-    for (int i = 0; i < node->tree_level; i++) {
+    QTNode* node_counter = (QTNode*)node;
+    while( node_counter->parent != nullptr ) {
         os << "|   ";
+        node_counter = node_counter->parent;
     }
 
     os << (void *) node->parent << ", ("
@@ -50,6 +52,13 @@ ostream &operator<<(ostream &os, const QTNode *node) {
     return os;
 }
 
+int QuadTree::calcIndex( int level, int r, int theta ) {
+
+    r = r >> level;
+    theta = theta >> level;
+    int n = num_azimuthal_points >> level;
+    return r*n+theta;
+}
 
 QuadTree::QuadTree(unsigned num_r, unsigned num_a) {
     num_radial_points = num_r;
@@ -61,13 +70,21 @@ QuadTree::QuadTree(unsigned num_r, unsigned num_a) {
         max_level++;
     }
 
-    levelVector = std::vector<std::vector<QTNode *>>();
+    cout << "INFO: QuadTree: r=" << num_radial_points << " theta=" << num_azimuthal_points << " max_level=" << max_level << "\n";
+
+    // Create the list of vectors which will contain the nodes for each level
+    levelVector = std::vector<std::vector<QTNode *>>(max_level+1);
+    int r = num_radial_points;
+    int t = num_azimuthal_points;
     for (int i = 0; i < (max_level + 1); i++) {
-        levelVector.push_back(std::vector<QTNode *>());
+        levelVector[i] = std::vector<QTNode *>(r*t);
+        // Divide by 2 leaving at least 1
+        r = max(1, r>>1);
+        t = max(1, t>>1);
     }
 
     // Recurseively create the node structure
-    head = createNode((QTNode *) nullptr, 0, pow(2, max_level) - 1, 0, pow(2, max_level) - 1, 0);
+    head = createNode((QTNode *) nullptr, 0, pow(2, max_level) - 1, 0, pow(2, max_level) - 1, max_level);
 
     // Iterate through all nodes and find their neighbours
     for (std::vector<QTNode *> nodes : levelVector) {
@@ -97,43 +114,43 @@ QuadTree::QuadTree(unsigned num_r, unsigned num_a) {
     }
 }
 
+
+
 QTNode *QuadTree::createNode(QTNode *parent, int r_start, int r_end, int t_start, int t_end, unsigned tree_level) {
 
     QTNode *node = nullptr;
 
     // If this node is outside the range don't create it and return null
     if ((r_start < num_radial_points) &&
-        (t_start < num_azimuthal_points) &&
-        (tree_level <= max_level + 1)) {
+        (t_start < num_azimuthal_points) ) {
 
-        unsigned step = (unsigned) pow(2, max(int(max_level) - (int) tree_level - 1, 0));
+        unsigned step = (unsigned) pow(2, max((unsigned)0, tree_level-1));
 
         node = new QTNode(parent, r_start, r_end, t_start, t_end, tree_level);
-        levelVector[tree_level].push_back(node);
+        levelVector[tree_level][calcIndex(tree_level, r_start, t_start)] = node;
 
-        // if this node is a single cell then leave the leaves null
-        if ((r_start < r_end) ||
-            (t_start < t_end)) {
+        // If this node is a single cell then leave the leaves null
+        if (tree_level > 0) {
 
             node->leaf[0] = createNode(node,
                                        r_start, r_start + step - 1,
                                        t_start, t_start + step - 1,
-                                       tree_level + 1);
+                                       tree_level - 1);
 
             node->leaf[1] = createNode(node,
                                        r_start + step, r_end,
                                        t_start, t_start + step - 1,
-                                       tree_level + 1);
+                                       tree_level - 1);
 
             node->leaf[2] = createNode(node,
                                        r_start, r_start + step - 1,
                                        t_start + step, t_end,
-                                       tree_level + 1);
+                                       tree_level - 1);
 
             node->leaf[3] = createNode(node,
                                        r_start + step, r_end,
                                        t_start + step, t_end,
-                                       tree_level + 1);
+                                       tree_level - 1);
 
 
         }
@@ -156,7 +173,7 @@ void QuadTree::printOneNode(QTNode *node) {
 void QuadTree::printNodesPerLevel() {
     int level = 0;
     for (std::vector<QTNode *> nodes : levelVector) {
-        cout << "Level:" << level++ << "\n";
+        cout << "Level:" << (max_level - level) << "\n";
         int linebreak = 0;
         for (QTNode *node : nodes) {
             cout << (void *) node << ",";
@@ -166,16 +183,15 @@ void QuadTree::printNodesPerLevel() {
             }
         }
         cout << "\n";
+        level++;
     }
-    level++;
-
 }
 
 void QuadTree::printNodes() {
 
     std::streambuf *psbuf, *backup;
     std::ofstream filestr;
-    string filename("/tmp/QuadTree.txt");
+    string filename("QuadTree.txt");
     filestr.open(filename);
 
     backup = std::cout.rdbuf();     // back up cout's streambuf

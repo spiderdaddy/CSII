@@ -196,11 +196,15 @@ void ApplyGravity(Disk *disk) {
             disk->getSegment()
     );
 
+    int resolution = 2;
     GravityProvider *gp = new ExclusionPolarTreeSelfGravityProvider( disk );
 //    GravityProvider *gp = new PolarBruteForceSelfGravityProvider( disk );
 
+    gp->setResolution(resolution);
     gp->calculate();
-    disk->saveGravities( "PolarTree-res-8.csv");
+    string filename(100, 0);
+    sprintf( &filename[0], "PolarTree-res-%d.csv", resolution);
+    disk->saveGravities( filename );
 
 //    GravityProvider *gp = new PolarBruteForceSelfGravityProvider( disk );
 //

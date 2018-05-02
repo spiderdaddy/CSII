@@ -72,8 +72,7 @@ void ExclusionPolarTreeSelfGravityProvider::calculate() {
 
             int level = node->tree_level;
 
-            int resolution = 8;
-            while (level > resolution ) {
+            while (level < resolution ) {
 
                 // Calc all lowest level in neighbours of the parent
                 for (QTNode *cell : node->neighbour ) {

@@ -19,6 +19,7 @@ public:
 
     virtual void calculate();
     long getTime();
+    void setResolution(int);
 
 
 protected:
@@ -30,6 +31,7 @@ protected:
     double * stellar_mass;
     void startTimer();
     void stopTimer();
+    int resolution = 0;
 
 private:
     std::chrono::system_clock::time_point startTime;
