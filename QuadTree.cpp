@@ -87,29 +87,23 @@ QuadTree::QuadTree(unsigned num_r, unsigned num_a) {
     head = createNode((QTNode *) nullptr, 0, pow(2, max_level) - 1, 0, pow(2, max_level) - 1, max_level);
 
     // Iterate through all nodes and find their neighbours
-    for (std::vector<QTNode *> nodes : levelVector) {
-        for (QTNode *node : nodes) {
+    for (int level = 0; level < (max_level + 1); level++) {
+        for (QTNode *node : levelVector[level]) {
             node->neighbour = vector<QTNode *>();
-            for (auto neighbour = nodes.begin();
-                 (neighbour != nodes.end()) && (node->neighbour.size() < 8); neighbour++) {
-                if ((((*neighbour)->r_end == node->r_start - 1) &&
-                     ((*neighbour)->t_end == (((node->t_start + num_azimuthal_points) - 1) % num_azimuthal_points)))
-                    || (((*neighbour)->r_end == node->r_start - 1) && ((*neighbour)->t_end == node->t_end))
-                    || (((*neighbour)->r_end == node->r_start - 1) &&
-                        ((*neighbour)->t_start == ((node->t_end + 1) % num_azimuthal_points)))
-                    || (((*neighbour)->r_start == node->r_start) &&
-                        ((*neighbour)->t_end == (((node->t_start + num_azimuthal_points) - 1) % num_azimuthal_points)))
-                    || (((*neighbour)->r_start == node->r_start) &&
-                        ((*neighbour)->t_start == ((node->t_end + 1) % num_azimuthal_points)))
-                    || (((*neighbour)->r_start == node->r_end + 1) &&
-                        ((*neighbour)->t_end == (((node->t_start + num_azimuthal_points) - 1) % num_azimuthal_points)))
-                    || (((*neighbour)->r_start == node->r_end + 1) && ((*neighbour)->t_end == node->t_end))
-                    || (((*neighbour)->r_start == node->r_end + 1) &&
-                        ((*neighbour)->t_start == ((node->t_end + 1) % num_azimuthal_points)))
-                        ) {
-                    node->neighbour.push_back(*neighbour);
-                }
+
+            // calculate 8 possible neigbours
+            if (node->r_start > 0) {
+                node->neighbour.push_back(levelVector[level][calcIndex(level, node->r_start - 1, node->t_start)] );
+                node->neighbour.push_back(levelVector[level][calcIndex(level, node->r_start - 1, (node->t_end + 1) % num_azimuthal_points)] );
+                node->neighbour.push_back(levelVector[level][calcIndex(level, node->r_start - 1, (node->t_start + num_azimuthal_points - 1) % num_azimuthal_points)] );
             }
+            if (node->r_end < num_radial_points - 1) {
+                node->neighbour.push_back(levelVector[level][calcIndex(level, node->r_end + 1, node->t_start)] );
+                node->neighbour.push_back(levelVector[level][calcIndex(level, node->r_end + 1, (node->t_end + 1) % num_azimuthal_points)] );
+                node->neighbour.push_back(levelVector[level][calcIndex(level, node->r_end + 1, (node->t_start + num_azimuthal_points - 1) % num_azimuthal_points)] );
+            }
+            node->neighbour.push_back(levelVector[level][calcIndex(level, node->r_start, (node->t_end + 1) % num_azimuthal_points)] );
+            node->neighbour.push_back(levelVector[level][calcIndex(level, node->r_start, (node->t_start + num_azimuthal_points - 1) % num_azimuthal_points)] );
         }
     }
 }

@@ -196,7 +196,7 @@ void ApplyGravity(Disk *disk) {
             disk->getSegment()
     );
 
-    int resolution = 2;
+    int resolution = 6;
     GravityProvider *gp = new ExclusionPolarTreeSelfGravityProvider( disk );
 //    GravityProvider *gp = new PolarBruteForceSelfGravityProvider( disk );
 
