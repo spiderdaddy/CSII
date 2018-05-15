@@ -5,6 +5,7 @@
 #include <vector>
 #include <cstdlib>
 #include <algorithm>
+#include <fstream>
 
 #include <glm/glm.hpp>
 
@@ -189,22 +190,31 @@ void MoveMass( Disk *disk ) {
 
 }
 
-void ApplyGravity(Disk *disk) {
+void ApplyGravity(Disk *disk, int resolution, string data_name) {
 
     initialiseAcceleration(
             disk->getNewSegment(),
             disk->getSegment()
     );
 
-    int resolution = 6;
     GravityProvider *gp = new ExclusionPolarTreeSelfGravityProvider( disk );
 //    GravityProvider *gp = new PolarBruteForceSelfGravityProvider( disk );
 
     gp->setResolution(resolution);
     gp->calculate();
+
     string filename(100, 0);
-    sprintf( &filename[0], "PolarTree-res-%d.csv", resolution);
+    sprintf( &filename[0], "result/PolarTree-res-%s-%d.csv", &data_name[0], resolution);
     disk->saveGravities( filename );
+
+    sprintf( &filename[0], "result/PolarTree-times-%s.csv", &data_name[0]);
+    ofstream myfile;
+    myfile.open(filename, std::ofstream::out | std::ofstream::app );
+    if (myfile.is_open()) {
+        myfile << resolution << "," << gp->getTime() << "\n";
+        myfile.close();
+    } else cout << "Unable to open file";
+
 
 //    GravityProvider *gp = new PolarBruteForceSelfGravityProvider( disk );
 //

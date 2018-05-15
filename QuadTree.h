@@ -38,6 +38,7 @@ public:
     QTNode *getHead() const;
     std::vector<QTNode*> getLevelVector(int level);
     int calcIndex( int level, int r, int theta );
+    int getMaxLevel();
 
 private:
     QTNode *createNode(QTNode *parent, int r_start, int r_end, int t_start, int t_end, unsigned tree_level);

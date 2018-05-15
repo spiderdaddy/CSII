@@ -213,3 +213,5 @@ std::vector<QTNode *> QuadTree::getLevelVector(int level) {
     return levelVector[level];
 
 }
+
+int QuadTree::getMaxLevel() { return max_level; }
