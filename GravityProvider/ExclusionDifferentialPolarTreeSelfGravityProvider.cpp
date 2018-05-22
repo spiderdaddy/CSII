@@ -5,22 +5,22 @@
 #include <iostream>
 #include <cmath>
 
-#include "ExclusionPolarTreeSelfGravityProvider.h"
+#include "ExclusionDifferentialPolarTreeSelfGravityProvider.h"
 
 
-bool isExcluded( QTNode * cell, QTNode * node ) {
-    if (cell == node) {
+bool ExclusionDifferentialPolarTreeSelfGravityProvider::isExcluded(QTNode *cell, QTNode *excluded_node) {
+    if (cell == excluded_node) {
         return true;
     }
-    for (QTNode *e : node->neighbour ) {
-        if ( e == cell ) {
+    for (QTNode *e : excluded_node->neighbour) {
+        if (e == cell) {
             return true;
         }
     }
     return false;
 }
 
-void ExclusionPolarTreeSelfGravityProvider::calculate() {
+void ExclusionDifferentialPolarTreeSelfGravityProvider::calculate() {
 
     startTimer();
 
@@ -31,89 +31,72 @@ void ExclusionPolarTreeSelfGravityProvider::calculate() {
     std::vector<Disk::Segment> &segment = *GravityProvider::pSegment;
 
     // Calculate acceleration for all points
-//    for (int r = GravityProvider::num_radial_cells / 2 - 10; r < GravityProvider::num_radial_cells / 2 +10; r++) {
-//        for (int t = GravityProvider::num_azimuthal_cells * 7/8 - 10; t < GravityProvider::num_azimuthal_cells * 7/8 +10; t++) {
-  for (int r = 0; r < GravityProvider::num_radial_cells; r++) {
-      for (int t = 0; t < GravityProvider::num_azimuthal_cells; t++) {
+    for (int r = 0; r < GravityProvider::num_radial_cells; r++) {
+        for (int t = 0; t < GravityProvider::num_azimuthal_cells; t++) {
 
-            int i1 = disk->getCellIndex(r, t);
+            int point = disk->getCellIndex(r, t);
 
             double ar = 0;
             double at = 0;
 
-            QTNode *child = segment[i1].node;
+            QTNode *child = segment[point].node;
             QTNode *node = child->parent;
 
             // For the lowest level calculate all the leaves in the same parent
             for (int i = 0; i < 4; i++) {
                 if ((node->leaf[i] != nullptr) &&
-                    (node->leaf[i] != child)) {
+                    (node->leaf[i] != child)) {  // Note, if point offset then this must be included?
 
-                    calcGravityForNode(i1, node->leaf[i], segment, ar, at);
+                    calcGravityForNode(point, node->leaf[i], segment, ar, at);
 
                 }
             }
 
             // Calculate all lowest level in neighbours of the parent
-            for (QTNode *cell : node->neighbour ) {
+            for (QTNode *cell : node->neighbour) {
                 for (int i = 0; i < 4; i++) {
                     if (cell->leaf[i] != nullptr) {
 
-                        calcGravityForNode(i1, cell->leaf[i], segment, ar, at);
+                        calcGravityForNode(point, cell->leaf[i], segment, ar, at);
 
                     }
                 }
             }
 
-            // for levels up to the resolution, calculate all the leaves of the neighbours
+            // for levels up to the resolution, calculate all the neighbours
             // but not the leaves which were neighbours of the child
             child = node;
             node = node->parent;
 
-            int level = node->tree_level;
-
-            while (level < resolution ) {
+            while (node->tree_level < resolution) {
 
                 // Calc all lowest level in neighbours of the parent
-                for (QTNode *cell : node->neighbour ) {
+                for (QTNode *cell : node->neighbour) {
                     for (int i = 0; i < 4; i++) {
-                        if ( (cell->leaf[i] != nullptr) &&
-                             !isExcluded(cell->leaf[i], child) )   {
-                            for (int j = 0; j < 4; j++) {
-                                if (cell->leaf[i]->leaf[j] != nullptr) {
+                        if ((cell->leaf[i] != nullptr) &&
+                            !isExcluded(cell->leaf[i], child)) {
 
-                                    calcGravityForNode(i1, cell->leaf[i]->leaf[j], segment, ar, at);
-                                }
-                            }
+                            calcGravityForNode(point, cell->leaf[i], segment, ar, at);
                         }
                     }
                 }
-
-
                 child = node;
                 node = node->parent;
-                level = node->tree_level;
             }
 
             // Now calc everything else at the level we are at
-            for (QTNode *cell : disk->getQuadTree()->getLevelVector(level) ) {
+            for (QTNode *cell : disk->getQuadTree()->getLevelVector(node->tree_level)) {
                 for (int i = 0; i < 4; i++) {
-                    if ( (cell->leaf[i] != nullptr) &&
-                         !isExcluded(cell->leaf[i], child) )   {
-                        for (int j = 0; j < 4; j++) {
-                            if (cell->leaf[i]->leaf[j] != nullptr) {
+                    if ((cell->leaf[i] != nullptr) &&
+                        !isExcluded(cell->leaf[i], child)) {
 
-                                calcGravityForNode(i1, cell->leaf[i]->leaf[j], segment, ar, at);
-                            }
-                        }
+                        calcGravityForNode(point, cell->leaf[i], segment, ar, at);
                     }
                 }
             }
 
-
-            newSegment[i1].ar += ar;
-            newSegment[i1].at += at;
-
+            newSegment[point].ar += ar;
+            newSegment[point].at += at;
         }
         fprintf(
                 stdout,
@@ -124,28 +107,38 @@ void ExclusionPolarTreeSelfGravityProvider::calculate() {
     }
 
     stopTimer();
-}
-
-void ExclusionPolarTreeSelfGravityProvider::calcGravityForNode(
-        int i,
-        QTNode *node,
-        vector<Disk::Segment> &segment,
-        double &ar,
-        double &at) const {
-    calcGravityForNode0(i, node, segment, ar, at);
-    calcGravityForNode1(i, node, segment, ar, at);
 
 }
 
-void ExclusionPolarTreeSelfGravityProvider::calcGravityForNode0(
-        int i,
+void ExclusionDifferentialPolarTreeSelfGravityProvider::calcGravityForNode(
+        int point,
         QTNode *node,
         vector<Disk::Segment> &segment,
         double &ar,
-        double &at) const {
-    double diff_theta = segment[i].theta - node->theta;
+        double &at) {
+
+    /* Currently as with ExclusionSublevelPolarTreeSelfGravityProvider we assume that depth is either 0 or 1
+     * i.e. calculating the 0th or 1st order derivative of the cell.
+     *
+     * For deeper levels we would implement further derivatives
+     */
+
+    calcGravityForNode0(point, node, segment, ar, at);
+    if (depth > 0) {
+        calcGravityForNode1(point, node, segment, ar, at);
+    }
+
+}
+
+void ExclusionDifferentialPolarTreeSelfGravityProvider::calcGravityForNode0(
+        int point,
+        QTNode *node,
+        vector<Disk::Segment> &segment,
+        double &ar,
+        double &at) {
+    double diff_theta = segment[point].theta - node->theta;
     double cos_diff_theta = cos(diff_theta);
-    double diff_r = segment[i].r - node->r;
+    double diff_r = segment[point].r - node->r;
     double exp_diff_r = exp(diff_r);
     double distance = (exp_diff_r * exp_diff_r)
                       + 1
@@ -160,40 +153,40 @@ void ExclusionPolarTreeSelfGravityProvider::calcGravityForNode0(
     at += a * sin(diff_theta);
 }
 
-void ExclusionPolarTreeSelfGravityProvider::calcGravityForNode1(
-        int i,
+void ExclusionDifferentialPolarTreeSelfGravityProvider::calcGravityForNode1(
+        int point,
         QTNode *node,
         vector<Disk::Segment> &segment,
         double &ar,
-        double &at) const {
+        double &at) {
 
-    for ( int child = 0 ; child < 4 ; child++) {
+    for (int child = 0; child < 4; child++) {
         if (node->leaf[child] != nullptr) {
 
             // Values we can reuse in both calculations
             double theta_tilde = node->leaf[child]->theta - node->theta;
-            double delta_theta = segment[i].theta - node->theta;
+            double delta_theta = segment[point].theta - node->theta;
             double diff_theta = delta_theta - theta_tilde;
 
             double X_tilde = node->leaf[child]->r - node->r;
-            double delta_X = segment[i].r - node->r ;
+            double delta_X = segment[point].r - node->r;
             double diff_X = delta_X - X_tilde;
 
             double exp_diff_X = exp(diff_X);
             double cos_diff_theta = cos(diff_theta);
             double sin_diff_theta = sin(diff_theta);
 
-            double denominator = 1 + ( exp_diff_X * ( exp_diff_X - 2 * cos_diff_theta) );
+            double denominator = 1 + (exp_diff_X * (exp_diff_X - 2 * cos_diff_theta));
             denominator = denominator * denominator * sqrt(abs(denominator));
 
             // r component or X~
-            double lfr = -3 * exp_diff_X * ( cos_diff_theta - exp_diff_X ) /
-                        denominator;
-            double a =  X_tilde * lfr;
+            double lfr = -3 * exp_diff_X * (cos_diff_theta - exp_diff_X) /
+                         denominator;
+            double a = X_tilde * lfr;
 
             // theta component or THETA~
             double lft = 3 * exp_diff_X * sin_diff_theta /
-                        denominator;
+                         denominator;
             a += theta_tilde * lft;
 
             a = a * -G * (node->leaf[child]->density * node->leaf[child]->area);

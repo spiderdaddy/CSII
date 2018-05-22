@@ -6,8 +6,11 @@
 #define CSII_GRAVITY_H
 
 #include "disk.h"
+#include <GravityProvider.h>
 
-void ApplyGravity(Disk *disk, int resolution, string);
+
+void ApplyGravities();
+void ApplyGravity(Disk *disk, string data_name, GravityProvider *gp, int resolution, int depth);
 
 //void ApplyXNearestNeighbourGravity();
 //void ApplyNearestNeighbourGravity();

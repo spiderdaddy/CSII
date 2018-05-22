@@ -7,7 +7,7 @@
 
 #include <chrono>
 #include "../disk.h"
-#include "../gravity.h"
+
 
 class GravityProvider {
 
@@ -20,6 +20,7 @@ public:
     virtual void calculate();
     long getTime();
     void setResolution(int);
+    void setDepth(int);
 
 
 protected:
@@ -32,6 +33,7 @@ protected:
     void startTimer();
     void stopTimer();
     int resolution = 0;
+    int depth = 0;
 
 private:
     std::chrono::system_clock::time_point startTime;

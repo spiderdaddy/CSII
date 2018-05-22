@@ -14,7 +14,8 @@
 #include "CartesianBruteForceSelfGravityProvider.h"
 #include "PolarBruteForceSelfGravityProvider.h"
 #include "SimplePolarTreeSelfGravityProvider.h"
-#include "ExclusionPolarTreeSelfGravityProvider.h"
+#include "ExclusionSublevelPolarTreeSelfGravityProvider.h"
+#include "ExclusionDifferentialPolarTreeSelfGravityProvider.h"
 #include "StellarGravityProvider.h"
 
 double r2 = 1 / std::sqrt(2);
@@ -190,35 +191,74 @@ void MoveMass( Disk *disk ) {
 
 }
 
-void ApplyGravity(Disk *disk, int resolution, string data_name) {
+void ApplyGravities() {
+    Disk *disk;
+
+    disk = new Disk(128, 256, "/data/UZH/CSII/data1/density.data");
+
+    GravityProvider *gp = new ExclusionSublevelPolarTreeSelfGravityProvider( disk );
+    for( int resolution = 0; resolution < 8; resolution++ ) {
+        for(int depth = 0; depth < 2; depth++ ) {
+            ApplyGravity(disk, "density-sub", gp, resolution, depth);
+        }
+    }
+
+    gp = new ExclusionDifferentialPolarTreeSelfGravityProvider( disk );
+    for( int resolution = 0; resolution < 8; resolution++ ) {
+        for(int depth = 0; depth < 2; depth++ ) {
+            ApplyGravity(disk, "density-diff", gp, resolution, depth);
+        }
+    }
+
+/*
+    // do one to remove initial time
+    ApplyGravity(disk, 7, "density0");
+    ApplyGravity(disk, 0, "density1");
+    ApplyGravity(disk, 0, "density2");
+    ApplyGravity(disk, 0, "density3");
+    ApplyGravity(disk, 0, "density4");
+
+    for (int i = 3; i < disk->getQuadTree()->getMaxLevel() ; i++) {
+        ApplyGravity(disk, i, "density");
+    }
+
+    disk = new Disk(128, 256, "/data/UZH/CSII/data1/density_planet.data");
+    ApplyGravity(disk, 7, "density_planet0");
+    ApplyGravity(disk, 0, "density_planet1");
+    ApplyGravity(disk, 0, "density_planet2");
+    ApplyGravity(disk, 0, "density_planet3");
+    ApplyGravity(disk, 0, "density_planet4");
+
+    for (int i = 3; i < disk->getQuadTree()->getMaxLevel() ; i++) {
+        ApplyGravity(disk, i, "density_planet");
+    }
+*/
+
+}
+
+void ApplyGravity(Disk *disk, string data_name, GravityProvider *gp, int resolution, int depth) {
 
     initialiseAcceleration(
             disk->getNewSegment(),
             disk->getSegment()
     );
 
-    GravityProvider *gp = new ExclusionPolarTreeSelfGravityProvider( disk );
-//    GravityProvider *gp = new PolarBruteForceSelfGravityProvider( disk );
-
     gp->setResolution(resolution);
+    gp->setDepth(depth);
     gp->calculate();
 
     string filename(100, 0);
-    sprintf( &filename[0], "result/PolarTree-res-%s-%d.csv", &data_name[0], resolution);
+    sprintf( &filename[0], "result/%s-%d-%d-result.csv", &data_name[0], resolution, depth);
     disk->saveGravities( filename );
 
-    sprintf( &filename[0], "result/PolarTree-times-%s.csv", &data_name[0]);
+    sprintf( &filename[0], "result/%s-time.csv", &data_name[0]);
     ofstream myfile;
     myfile.open(filename, std::ofstream::out | std::ofstream::app );
     if (myfile.is_open()) {
-        myfile << resolution << "," << gp->getTime() << "\n";
+        myfile << depth << "," << resolution << "," << gp->getTime() << "\n";
         myfile.close();
     } else cout << "Unable to open file";
 
-
-//    GravityProvider *gp = new PolarBruteForceSelfGravityProvider( disk );
-//
-//    gp->calculate();
 
     fprintf(
             stdout,

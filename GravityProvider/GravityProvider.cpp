@@ -31,6 +31,9 @@ void GravityProvider::stopTimer() {
 }
 
 void GravityProvider::setResolution(int r) { resolution = r; }
+void GravityProvider::setDepth(int d) { depth = d; }
+
+
 
 long GravityProvider::getTime() {
     return std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count();

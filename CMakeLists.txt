@@ -20,7 +20,8 @@ add_executable(csii
         GravityProvider/GravityProvider.cpp
         GravityProvider/PolarBruteForceSelfGravityProvider.cpp
         GravityProvider/SimplePolarTreeSelfGravityProvider.cpp
-        GravityProvider/ExclusionPolarTreeSelfGravityProvider.cpp
+        GravityProvider/ExclusionSublevelPolarTreeSelfGravityProvider.cpp
+        GravityProvider/ExclusionDifferentialPolarTreeSelfGravityProvider.cpp
         GravityProvider/StellarGravityProvider.cpp
         GravityProvider/CartesianBruteForceSelfGravityProvider.cpp
 
