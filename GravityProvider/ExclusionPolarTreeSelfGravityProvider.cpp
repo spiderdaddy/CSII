@@ -132,6 +132,17 @@ void ExclusionPolarTreeSelfGravityProvider::calcGravityForNode(
         vector<Disk::Segment> &segment,
         double &ar,
         double &at) const {
+    calcGravityForNode0(i, node, segment, ar, at);
+    calcGravityForNode1(i, node, segment, ar, at);
+
+}
+
+void ExclusionPolarTreeSelfGravityProvider::calcGravityForNode0(
+        int i,
+        QTNode *node,
+        vector<Disk::Segment> &segment,
+        double &ar,
+        double &at) const {
     double diff_theta = segment[i].theta - node->theta;
     double cos_diff_theta = cos(diff_theta);
     double diff_r = segment[i].r - node->r;
@@ -149,3 +160,48 @@ void ExclusionPolarTreeSelfGravityProvider::calcGravityForNode(
     at += a * sin(diff_theta);
 }
 
+void ExclusionPolarTreeSelfGravityProvider::calcGravityForNode1(
+        int i,
+        QTNode *node,
+        vector<Disk::Segment> &segment,
+        double &ar,
+        double &at) const {
+
+    for ( int child = 0 ; child < 4 ; child++) {
+        if (node->leaf[child] != nullptr) {
+
+            // Values we can reuse in both calculations
+            double theta_tilde = node->leaf[child]->theta - node->theta;
+            double delta_theta = segment[i].theta - node->theta;
+            double diff_theta = delta_theta - theta_tilde;
+
+            double X_tilde = node->leaf[child]->r - node->r;
+            double delta_X = segment[i].r - node->r ;
+            double diff_X = delta_X - X_tilde;
+
+            double exp_diff_X = exp(diff_X);
+            double cos_diff_theta = cos(diff_theta);
+            double sin_diff_theta = sin(diff_theta);
+
+            double denominator = 1 + ( exp_diff_X * ( exp_diff_X - 2 * cos_diff_theta) );
+            denominator = denominator * denominator * sqrt(abs(denominator));
+
+            // r component or X~
+            double lfr = -3 * exp_diff_X * ( cos_diff_theta - exp_diff_X ) /
+                        denominator;
+            double a =  X_tilde * lfr;
+
+            // theta component or THETA~
+            double lft = 3 * exp_diff_X * sin_diff_theta /
+                        denominator;
+            a += theta_tilde * lft;
+
+            a = a * -G * (node->leaf[child]->density * node->leaf[child]->area);
+
+            // Calculate values directed along the axes
+            at += a * sin_diff_theta;
+            ar += a * (exp_diff_X - cos_diff_theta);
+
+        }
+    }
+}
