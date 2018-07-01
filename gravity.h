@@ -9,8 +9,15 @@
 #include <GravityProvider.h>
 
 
-void ApplyGravities();
-void ApplyGravity(Disk *disk, string data_name, GravityProvider *gp, int resolution, int depth);
+void ApplyGravities( string path,
+                     string dataname,
+                     unsigned r_cells,
+                     unsigned theta_cells,
+                     unsigned max_depth,
+                     unsigned min_resolution,
+                     unsigned max_resolution) ;
+
+void ApplyGravity(Disk *disk, string pathname, string data_name, GravityProvider *gp, int resolution, int depth) ;
 
 //void ApplyXNearestNeighbourGravity();
 //void ApplyNearestNeighbourGravity();

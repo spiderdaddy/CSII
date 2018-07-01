@@ -29,4 +29,4 @@ add_executable(csii
 
         )
 
-target_link_libraries(csii glut GL GLEW GLU )
+target_link_libraries(csii glut GL GLEW GLU pthread freeimage )

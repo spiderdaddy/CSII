@@ -1,31 +1,64 @@
 
 #include <cstdlib>
+#include <thread>
+#include <zconf.h>
 
 #include "disk.h"
 #include "graphics.h"
+
 
 #include "QuadTree.h"
 
 void Initialize(int argc, char *argv[]) {
 
-    //Disk *disk = new Disk(128, 256, "/data/UZH/CSII/data1/density.data");
-    Disk *disk = new Disk(128, 256, "/data/UZH/CSII/data1/density_planet.data");
-
-    InitializeGraphics(argc, argv, disk);
+    InitializeGraphics(argc, argv);
 
 }
 
 
 int main(int argc, char *argv[]) {
 
-//    Initialize(argc, argv);
+    Initialize(argc, argv);
 
-//    GraphicsMainLoop();
+    std::thread graphics (GraphicsMainLoop);
 
-    ApplyGravities();
+    ApplyGravities(
+            "/data/UZH/CSII/data1",
+            "density",
+            128,
+            256,
+            1,
+            6,
+            6);
 
+/*
+    ApplyGravities(
+            "/data/UZH/CSII/data1",
+            "density_planet",
+            128,
+            256,
+            1,
+            6,
+            6);
 
+    ApplyGravities(
+            "/data/UZH/CSII/data1",
+            "density_final_05k",
+            512,
+            512,
+            1,
+            1,
+            6);
 
+    ApplyGravities(
+            "/data/UZH/CSII/data1",
+            "density_final_1k",
+            1024,
+            1024,
+            1,
+            1,
+            6);
+*/
     exit(EXIT_SUCCESS);
 }
 

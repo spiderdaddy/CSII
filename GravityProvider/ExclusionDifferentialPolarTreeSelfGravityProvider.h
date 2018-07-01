@@ -18,9 +18,10 @@ public:
 
 
 private:
-    void calcGravityForNode(int point, QTNode *node, vector<Disk::Segment> &segment, double &ar, double &at);
+    void calcGravityForNode (int point, QTNode *node, vector<Disk::Segment> &segment, double &ar, double &at);
     void calcGravityForNode0(int point, QTNode *node, vector<Disk::Segment> &segment, double &ar, double &at);
     void calcGravityForNode1(int point, QTNode *node, vector<Disk::Segment> &segment, double &ar, double &at);
+    void calcGravityForNode2(int point, QTNode *node, vector<Disk::Segment> &segment, double &ar, double &at);
     bool isExcluded( QTNode * cell, QTNode * node );
 };
 

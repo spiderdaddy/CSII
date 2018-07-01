@@ -13,7 +13,7 @@
 #define INNER_RADIUS 0.5
 #define OUTER_RADIUS 1.5
 
-#define G 6.6e-11
+#define G 1
 #define M_EARTH   1e22
 #define M_SUN     2e30
 #define M_JUPITER 1e27

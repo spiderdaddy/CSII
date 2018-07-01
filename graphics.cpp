@@ -5,6 +5,9 @@
 #include <cstdio>
 #include <vector>
 #include <cstring>
+#include <thread>
+#include <chrono>
+#include <FreeImage.h>
 
 #include <GL/glew.h>
 #include <GL/freeglut.h>
@@ -34,17 +37,48 @@ GLuint MatrixID;
 
 glm::mat4 MVP;
 
+Disk * disk;
+
+bool render_on = true;
+
+void pause_render() {render_on = false; }
+void resume_render() {render_on = true; }
+
+bool rendering = false;
+
+bool isRendering() { return rendering ;}
+
 void GraphicsMainLoop() {
+
+    while (disk == nullptr) {
+        std::this_thread::sleep_for(chrono::milliseconds(100));
+    }
 
     glutMainLoop();
 
 }
 
-Disk * disk;
 
-void InitializeGraphics(int argc, char *argv[], Disk *d) {
 
+void setDisk( Disk * d ) {
     disk = d;
+    CreateVBO();
+}
+
+bool keyPressed = false;
+void keyDownFunc( unsigned char key, int x, int y) {
+    keyPressed = true;
+}
+
+void keyUpFunc( unsigned char key, int x, int y) {
+    keyPressed = false;
+}
+
+bool getKeyPressed() {
+    return keyPressed;
+}
+
+void InitializeGraphics(int argc, char *argv[]) {
 
     InitWindow(argc, argv);
 
@@ -67,16 +101,25 @@ void InitializeGraphics(int argc, char *argv[], Disk *d) {
     );
 
     CreateShaders();
-    CreateVBO();
+
 
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+
+    glutKeyboardFunc(keyDownFunc);
+    glutKeyboardUpFunc(keyUpFunc);
 
 }
 
 
 void RenderFunction(void) {
 
+    if ( ( disk == nullptr ) || ( render_on = false ) ) {
+        return;
+    }
+
     ++FrameCount;
+
+    rendering = true;
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -88,13 +131,14 @@ void RenderFunction(void) {
     glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &MVP[0][0]);
 
     std::vector<Disk::SegmentVertices> segmentVertices = disk->getSegmentVertices();
+    std::vector<Disk::SegmentColours> segmentColours = disk->getSegmentColours();
+
     glBindBuffer(GL_ARRAY_BUFFER, VboAreaId);
     glBufferData(GL_ARRAY_BUFFER, segmentVertices.size() * sizeof(Disk::SegmentVertices), &segmentVertices[0], GL_STATIC_DRAW);
     glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(Disk::XYZW_GL), 0);
     glEnableVertexAttribArray(1);
 
     disk->MapSegmentToColor();
-    std::vector<Disk::SegmentColours> segmentColours = disk->getSegmentColours();
     glBindBuffer(GL_ARRAY_BUFFER, VboPropertyId);
     glBufferData(GL_ARRAY_BUFFER, segmentColours.size() * sizeof(Disk::SegmentColours), &segmentColours[0], GL_STATIC_DRAW);
     glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(Disk::RGBA_GL), 0);
@@ -103,29 +147,25 @@ void RenderFunction(void) {
     glDrawArrays(GL_TRIANGLES, 0, segmentVertices.size()*6);
 
     std::vector<Disk::SegmentVertices> gravityVertices = disk->getGravityVertices();
+    std::vector<Disk::SegmentColours> gravityColours = disk->getGravityColours();
+
     glBindBuffer(GL_ARRAY_BUFFER, VboAreaId);
-    glBufferData(GL_ARRAY_BUFFER, segmentVertices.size() * sizeof(Disk::SegmentVertices), &gravityVertices[0], GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, gravityVertices.size() * sizeof(Disk::SegmentVertices), &gravityVertices[0], GL_STATIC_DRAW);
     glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(Disk::XYZW_GL), 0);
     glEnableVertexAttribArray(1);
 
     disk->MapGravityToColor();
-    std::vector<Disk::SegmentColours> gravityColours = disk->getGravityColours();
     glBindBuffer(GL_ARRAY_BUFFER, VboPropertyId);
-    glBufferData(GL_ARRAY_BUFFER, segmentColours.size() * sizeof(Disk::SegmentColours), &gravityColours[0], GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, gravityColours.size() * sizeof(Disk::SegmentColours), &gravityColours[0], GL_STATIC_DRAW);
     glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(Disk::RGBA_GL), 0);
     glEnableVertexAttribArray(0);
 
     glDrawArrays(GL_TRIANGLES, 0, gravityVertices.size()*6);
 
-
     glFlush();
     glutSwapBuffers();
+    rendering = false;
 
-    //ApplyGravity(disk, 6, "test");
-
-    disk->swapSegments();
-
-    disk->CalcSystemMass();
 }
 
 
@@ -296,5 +336,27 @@ void ResizeFunction(int Width, int Height) {
     //glViewport(0, 0, std::min(CurrentWidth, CurrentHeight), std::min(CurrentWidth, CurrentHeight));
     glViewport(0, 0, CurrentWidth, CurrentHeight);
 
+}
+
+void saveImage( string filename_base ) {
+
+    string filename = filename_base.append(".png");
+    int width = 900;
+    int height = 900;
+	BYTE pixels [3*width*height];
+
+	glReadPixels(900,0,width,height, GL_BGR, GL_UNSIGNED_BYTE, pixels);
+
+    auto ErrorCheckValue = glGetError();
+    if (ErrorCheckValue != GL_NO_ERROR) {
+        fprintf(
+                stderr,
+                "ERROR: glReadPixels: %s \n",
+                gluErrorString(ErrorCheckValue)
+        );
+    }
+
+    FIBITMAP* Image = FreeImage_ConvertFromRawBits(pixels, width, height, 3*width, 24, 0xFF0000, 0x00FF00, 0x0000FF, false);
+	FreeImage_Save(FIF_PNG, Image, &filename[0], 0);
 }
 

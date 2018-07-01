@@ -11,6 +11,7 @@
 #include <algorithm>
 
 #include <glm/common.hpp>
+#include <iomanip>
 
 
 #include "disk.h"
@@ -282,21 +283,21 @@ void Disk::MapGravityToColor() {
     double d_max = 0;
 
     for (int i = 0; i < gravityColours.size(); i++) {
-        d_max = max(d_max, sqrt(segment[i].at*segment[i].at + segment[i].ar*segment[i].ar));
+        d_max = max(d_max, sqrt(newSegment[i].at*newSegment[i].at + newSegment[i].ar*newSegment[i].ar));
     }
 
     for (int i = 0; i < gravityColours.size(); i++) {
         SegmentColours *scp = &gravityColours[i];
-        double H = sqrt(segment[i].at*segment[i].at + segment[i].ar*segment[i].ar);
+        double H = sqrt(newSegment[i].at*newSegment[i].at + newSegment[i].ar*newSegment[i].ar);
         double theta = 0;
-        if ( segment[i].ar > 0 ) theta = atan(segment[i].at/segment[i].ar);
-        else theta = atan(segment[i].at/segment[i].ar) + M_PI;
+        if ( newSegment[i].ar > 0 ) theta = atan(newSegment[i].at/newSegment[i].ar);
+        else theta = atan(newSegment[i].at/newSegment[i].ar) + M_PI;
 //        fprintf(
 //                stdout,
 //                "INFO: %f %f %0.18f %0.18f\r",
 //                segment[i].r, segment[i].theta, H, theta
 //        );
-        theta += segment[i].theta;
+        theta += newSegment[i].theta;
         if (theta < 0 ) theta = (2.0 * M_PI) + theta;
         if (theta > 2.0 * M_PI) theta = theta - (2.0 * M_PI);
         getcolor( theta, (2.0 * M_PI), scp->c1.r, scp->c1.g, scp->c1.b );
@@ -359,7 +360,9 @@ void Disk::saveGravities( string filename ) {
     if (myfile.is_open()) {
 
         for( int i = 0; i < newSegment.size(); i++ ) {
-            myfile << newSegment[i].ar << "," << newSegment[i].at << "\n";
+            myfile << std::setprecision(std::numeric_limits<double>::digits10 + 1)
+                   << std::scientific
+                   << newSegment[i].ar << "," << newSegment[i].at << "\n";
         }
         myfile.close();
     } else cout << "Unable to open file";

@@ -6,11 +6,16 @@
 #include <cstdlib>
 #include <algorithm>
 #include <fstream>
+#include <thread>
+#include <ctime>
 
 #include <glm/glm.hpp>
+#include <sys/stat.h>
+#include <iomanip>
 
 #include "disk.h"
 #include "gravity.h"
+#include "graphics.h"
 #include "CartesianBruteForceSelfGravityProvider.h"
 #include "PolarBruteForceSelfGravityProvider.h"
 #include "SimplePolarTreeSelfGravityProvider.h"
@@ -191,53 +196,124 @@ void MoveMass( Disk *disk ) {
 
 }
 
-void ApplyGravities() {
+void waitforkey()
+{
+    while(getKeyPressed()) {
+       std::this_thread::sleep_for( std::chrono::milliseconds(10) );
+    }
+}
+
+void ApplyGravities( string path,
+                     string dataname,
+                     unsigned r_cells,
+                     unsigned theta_cells,
+                     unsigned max_depth,
+                     unsigned min_resolution,
+                     unsigned max_resolution) {
+
     Disk *disk;
+    GravityProvider *gp;
+    string name;
 
-    disk = new Disk(128, 256, "/data/UZH/CSII/data1/density.data");
+    string filename;
+    filename.append(path);
+    filename.append("/");
+    filename.append(dataname);
+    filename.append(".data");
 
-    GravityProvider *gp = new ExclusionSublevelPolarTreeSelfGravityProvider( disk );
-    for( int resolution = 0; resolution < 8; resolution++ ) {
-        for(int depth = 0; depth < 2; depth++ ) {
-            ApplyGravity(disk, "density-sub", gp, resolution, depth);
+    string result_dir = "result";
+    result_dir.append("-");
+    result_dir.append(dataname);
+    result_dir.append("-");
+    std::time_t t = std::time(nullptr);
+    std::tm tm = *std::localtime(&t);
+    char buffer[80];
+    strftime(buffer, sizeof(buffer), "%Y%m%d%H%M%S", &tm);
+    result_dir.append(buffer);
+    mkdir(&result_dir[0], S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+
+    disk = new Disk(r_cells, theta_cells, filename);
+    setDisk(disk);
+
+    gp = new ExclusionDifferentialPolarTreeSelfGravityProvider(disk);
+    for (unsigned resolution = min_resolution; resolution <= max_resolution; resolution++) {
+        for (unsigned depth = 0; depth <= max_depth; depth++) {
+            ApplyGravity(disk, result_dir, "diff", gp, resolution, depth);
+            waitforkey();
         }
     }
 
-    gp = new ExclusionDifferentialPolarTreeSelfGravityProvider( disk );
-    for( int resolution = 0; resolution < 8; resolution++ ) {
-        for(int depth = 0; depth < 2; depth++ ) {
-            ApplyGravity(disk, "density-diff", gp, resolution, depth);
+
+    gp = new ExclusionSublevelPolarTreeSelfGravityProvider(disk);
+    for (unsigned resolution = min_resolution; resolution <= max_resolution; resolution++) {
+        for (unsigned depth = 1; depth <= max_depth; depth++) {
+            ApplyGravity(disk, result_dir, "sub", gp, resolution, depth);
+            waitforkey();
         }
     }
 
-/*
-    // do one to remove initial time
-    ApplyGravity(disk, 7, "density0");
-    ApplyGravity(disk, 0, "density1");
-    ApplyGravity(disk, 0, "density2");
-    ApplyGravity(disk, 0, "density3");
-    ApplyGravity(disk, 0, "density4");
-
-    for (int i = 3; i < disk->getQuadTree()->getMaxLevel() ; i++) {
-        ApplyGravity(disk, i, "density");
-    }
-
-    disk = new Disk(128, 256, "/data/UZH/CSII/data1/density_planet.data");
-    ApplyGravity(disk, 7, "density_planet0");
-    ApplyGravity(disk, 0, "density_planet1");
-    ApplyGravity(disk, 0, "density_planet2");
-    ApplyGravity(disk, 0, "density_planet3");
-    ApplyGravity(disk, 0, "density_planet4");
-
-    for (int i = 3; i < disk->getQuadTree()->getMaxLevel() ; i++) {
-        ApplyGravity(disk, i, "density_planet");
-    }
-*/
 
 }
 
-void ApplyGravity(Disk *disk, string data_name, GravityProvider *gp, int resolution, int depth) {
+/*
+    disk = new Disk(128, 256, "/data/UZH/CSII/data1/density_planet.data");
+    setDisk(disk);
 
+    gp = new ExclusionSublevelPolarTreeSelfGravityProvider( disk );
+    for( int resolution = min_resolution; resolution < max_resolution; resolution++ ) {
+        for(int depth = 0; depth < 1; depth++ ) {
+            ApplyGravity(disk, "density_planet-sub", gp, resolution, depth);
+            saveImage( "density_planet-sub.png" );
+            waitforkey();
+        }
+    }
+
+    disk = new Disk(512, 512, "/data/UZH/CSII/data1/density_final_05k.data");
+    setDisk(disk);
+    gp = new ExclusionSublevelPolarTreeSelfGravityProvider( disk );
+    for( int resolution = min_resolution; resolution < max_resolution; resolution++ ) {
+        for(int depth = 1; depth < 2; depth++ ) {
+            ApplyGravity(disk, "density_planet-sub", gp, resolution, depth);
+            disk->MapGravityToColor();
+            saveImage( "density_planet-sub", 512, 512);
+            waitforkey();
+        }
+    }
+
+    disk = new Disk(1024, 1024, "/data/UZH/CSII/data1/density_final_1k.data");
+    setDisk(disk);
+    gp = new ExclusionSublevelPolarTreeSelfGravityProvider( disk );
+    for( int resolution = min_resolution; resolution < max_resolution; resolution++ ) {
+        for(int depth = 1; depth < 2; depth++ ) {
+            ApplyGravity(disk, "density_planet-sub", gp, resolution, depth);
+            disk->MapGravityToColor();
+            saveImage( "density_planet-sub", 1024, 1024);
+            waitforkey();
+        }
+    }
+
+
+    gp = new ExclusionDifferentialPolarTreeSelfGravityProvider( disk );
+    for( int resolution = min_resolution; resolution < max_resolution; resolution++ ) {
+        for(int depth = 1; depth < 2; depth++ ) {
+            ApplyGravity(disk, "density_planet-diff", gp, resolution, depth);
+            disk->MapGravityToColor();
+            waitforkey();
+        }
+    }
+
+*/
+
+void ApplyGravity(Disk *disk, string pathname, string data_name, GravityProvider *gp, int resolution, int depth) {
+
+    char filename_base[80];
+    sprintf( &filename_base[0], "%s/%s-%d-%d", &pathname[0], &data_name[0], resolution, depth);
+
+    fprintf(
+            stdout,
+            "INFO: calculating: %s\n",
+            &filename_base[0]
+    );
     initialiseAcceleration(
             disk->getNewSegment(),
             disk->getSegment()
@@ -247,13 +323,19 @@ void ApplyGravity(Disk *disk, string data_name, GravityProvider *gp, int resolut
     gp->setDepth(depth);
     gp->calculate();
 
-    string filename(100, 0);
-    sprintf( &filename[0], "result/%s-%d-%d-result.csv", &data_name[0], resolution, depth);
-    disk->saveGravities( filename );
+    pause_render();
+    while ( isRendering() ) {
+        std::this_thread::sleep_for(chrono::milliseconds(1));
+    }
+    string csv_filename(filename_base);
+    csv_filename.append(".csv");
+    disk->saveGravities( csv_filename );
 
-    sprintf( &filename[0], "result/%s-time.csv", &data_name[0]);
+//    saveImage( filename_base );
+
+    sprintf( filename_base, "%s/%s-time.csv", &pathname[0], &data_name[0]);
     ofstream myfile;
-    myfile.open(filename, std::ofstream::out | std::ofstream::app );
+    myfile.open(filename_base, std::ofstream::out | std::ofstream::app );
     if (myfile.is_open()) {
         myfile << depth << "," << resolution << "," << gp->getTime() << "\n";
         myfile.close();
@@ -265,6 +347,8 @@ void ApplyGravity(Disk *disk, string data_name, GravityProvider *gp, int resolut
             "INFO: time required(s)=%f\n",
             gp->getTime() / 1000.0
     );
+
+    resume_render();
 
 /*
     GravityProvider *sgp = new StellarGravityProvider( disk );
