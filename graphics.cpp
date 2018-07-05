@@ -23,8 +23,8 @@
 
 using namespace glm;
 
-int CurrentWidth = 1800;
-int CurrentHeight = 900;
+int CurrentWidth = 6000;
+int CurrentHeight = 3000;
 int WindowHandle = 0;
 unsigned FrameCount = 0;
 
@@ -339,6 +339,8 @@ void ResizeFunction(int Width, int Height) {
 }
 
 void saveImage( string filename_base ) {
+
+    RenderFunction();
 
     string filename = filename_base.append(".png");
     int width = 900;

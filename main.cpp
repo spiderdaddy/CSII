@@ -27,34 +27,39 @@ int main(int argc, char *argv[]) {
             "density",
             128,
             256,
-            1,
-            6,
+            0,
+            2,
+            4,
             6);
 
-/*
+
     ApplyGravities(
             "/data/UZH/CSII/data1",
             "density_planet",
             128,
             256,
-            1,
-            6,
+            0,
+            2,
+            4,
             6);
 
+/*
     ApplyGravities(
             "/data/UZH/CSII/data1",
             "density_final_05k",
             512,
             512,
+            0,
             1,
-            1,
-            6);
-
+            3,
+            7);
+/*
     ApplyGravities(
             "/data/UZH/CSII/data1",
             "density_final_1k",
             1024,
             1024,
+            0,
             1,
             1,
             6);

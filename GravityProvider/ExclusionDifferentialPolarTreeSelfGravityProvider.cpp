@@ -39,39 +39,22 @@ void ExclusionDifferentialPolarTreeSelfGravityProvider::calculate() {
             double ar = 0;
             double at = 0;
 
-            QTNode *child = segment[point].node;
-            QTNode *node = child->parent;
+            QTNode *node = segment[point].node;
+            QTNode * child = nullptr;
 
-            // For the lowest level calculate all the leaves in the same parent
-            for (int i = 0; i < 4; i++) {
-                if ((node->leaf[i] != nullptr) &&
-                    (node->leaf[i] != child)) {  // Note, if point offset then this must be included?
-
-                    calcGravityForNode(point, node->leaf[i], segment, ar, at);
-
-                }
-            }
-
-            // Calculate all lowest level in neighbours of the parent
+            // For level 0 calculate all lowest level in neighbours of the node
             for (QTNode *cell : node->neighbour) {
-                for (int i = 0; i < 4; i++) {
-                    if (cell->leaf[i] != nullptr) {
 
-                        calcGravityForNode(point, cell->leaf[i], segment, ar, at);
+                calcGravityForNode(point, cell, segment, ar, at);
 
-                    }
-                }
             }
 
-
-            // for levels up to the resolution, calculate all the neighbours
-            // but not the leaves which were neighbours of the child
             child = node;
             node = node->parent;
 
             while (node->tree_level < resolution) {
 
-                // Calc all lowest level in neighbours of the parent
+                // Calc all cells at one level lower
                 for (QTNode *cell : node->neighbour) {
                     for (int i = 0; i < 4; i++) {
                         if ((cell->leaf[i] != nullptr) &&
@@ -81,8 +64,10 @@ void ExclusionDifferentialPolarTreeSelfGravityProvider::calculate() {
                         }
                     }
                 }
+
                 child = node;
                 node = node->parent;
+
             }
 
             // Now calc everything else at the level we are at
@@ -111,6 +96,19 @@ void ExclusionDifferentialPolarTreeSelfGravityProvider::calculate() {
 
 }
 
+/*void sum_mass( QTNode * root, QTNode * node, double &X, double &t ) {
+    if ( node->tree_level == 0 ) {
+        X += (node->r - root->r) * node->density * node->area;
+        t += (node->theta - root->theta) * node->density * node->area;
+    } else {
+        for (int child = 0; child < 4; child++) {
+            if (node->leaf[child] != nullptr) {
+                sum_mass(root, node->leaf[child], X, t);
+            }
+        }
+    }
+}
+*/
 void ExclusionDifferentialPolarTreeSelfGravityProvider::calcGravityForNode(
         int point,
         QTNode *node,
@@ -118,16 +116,38 @@ void ExclusionDifferentialPolarTreeSelfGravityProvider::calcGravityForNode(
         double &ar,
         double &at) {
 
+    // Calculate integrals for X_tilde and theta_tilde
     double X_mass = 0;
     double theta_mass = 0;
-    for (int child = 0; child < 4; child++) {
-        if (node->leaf[child] != nullptr) {
-            X_mass += (node->leaf[child]->r - node->r) * node->leaf[child]->density * node->leaf[child]->area;
-            theta_mass +=
-                    (node->leaf[child]->theta - node->theta) * node->leaf[child]->density * node->leaf[child]->area;
+    if (depth >= 1) {
 
+        double m;
+        for (int child = 0; child < 4; child++) {
+            if (node->leaf[child] != nullptr) {
+                m = node->leaf[child]->density * node->leaf[child]->area;
+                X_mass += (node->leaf[child]->r - node->r) * m;
+                theta_mass += (node->leaf[child]->theta - node->theta) * m;
+            }
         }
+
     }
+    double X2_mass = 0;
+    double theta2_mass = 0;
+    double Xtheta_mass = 0;
+    if (depth >= 2) {
+
+        double m;
+        for (int child = 0; child < 4; child++) {
+            if (node->leaf[child] != nullptr) {
+                m = node->leaf[child]->density * node->leaf[child]->area;
+                X2_mass += (node->leaf[child]->r - node->r) * (node->leaf[child]->r - node->r) * m;
+                theta2_mass += (node->leaf[child]->theta - node->theta) * (node->leaf[child]->theta - node->theta) * m;
+                Xtheta_mass += (node->leaf[child]->r - node->r) * (node->leaf[child]->theta - node->theta) * m;
+            }
+        }
+
+    }
+
 
     // The integral sigma * dXdT
     double mass = node->density * node->area;
@@ -140,196 +160,99 @@ void ExclusionDifferentialPolarTreeSelfGravityProvider::calcGravityForNode(
     double cos_delta_theta = cos(delta_theta);
     double sin_delta_theta = sin(delta_theta);
 
-    double l = 1 + (exp_delta_X * (exp_delta_X - 2 * cos_delta_theta));
+    double l = 1.0 + (exp_delta_X * (exp_delta_X - (2.0 * cos_delta_theta)));
     double l32 = l * sqrt(abs(l));
     double l52 = l * l32;
+    double l72 = l * l52;
 
-    double dlX = 3 * exp_delta_X * (exp_delta_X - cos_delta_theta) / l52;
-    double dltheta = 3 * exp_delta_X * sin_delta_theta / l52;
+    double dlX = 3.0 * exp_delta_X * (exp_delta_X - cos_delta_theta) / l52;
+    double dltheta = 3.0 * exp_delta_X * sin_delta_theta / l52;
 
     double fr0 = (exp_delta_X - cos_delta_theta);
     double ftheta0 = sin_delta_theta;
 
-    double lfr;
-
     //
     // 0th order component
     //
-    lfr = fr0 / l32;
-    ar -= lfr * mass;
+    ar -= fr0 / l32 * mass;
 
     //
     // 1st order components
     //
-    if( depth >= 1 ) {
-        lfr = dlX * fr0;
-        lfr -= exp_delta_X / l32;
-        // Note we are assuming G=1
-        ar -= lfr * X_mass;
+    if (depth >= 1) {
+        // X~ component of fr
+        ar -= ((dlX * fr0) - (exp_delta_X / l32)) * X_mass;
 
         // theta~ component of fr
-        lfr = dltheta * fr0;
-        lfr -= sin_delta_theta / l32;
-        ar -= lfr * theta_mass;
+        ar -= ((dltheta * fr0) - (sin_delta_theta / l32)) * theta_mass;
     }
 
-    double lft;
+
+    //
+    // 2nd order components
+    //
+    if (depth >= 2) {
+        ar -= exp_delta_X * (
+                (fr0 * 15.0 *
+                 (exp_delta_X * exp_delta_X * (cos_delta_theta - exp_delta_X) * (cos_delta_theta - exp_delta_X))) / l72
+                - (fr0 * 3.0 * (2.0 * exp_delta_X - cos_delta_theta)) / l52
+                - (6.0 * exp_delta_X * exp_delta_X - exp_delta_X * cos_delta_theta) / l52
+                + 1.0 / l32) * 0.5 * X2_mass;
+
+        ar -= ((fr0 * 15.0 * (exp_delta_X * sin_delta_theta) * (exp_delta_X * sin_delta_theta)) / l72
+               - (fr0 * 3.0 * exp_delta_X * cos_delta_theta) / l52
+               - 6.0 * exp_delta_X * sin_delta_theta * sin_delta_theta / l52
+               + cos_delta_theta / l32) * 0.5 * theta2_mass;
+
+        ar -= (15.0 * (sin_delta_theta * (exp_delta_X * exp_delta_X * cos_delta_theta * cos_delta_theta -
+                                        exp_delta_X * exp_delta_X * exp_delta_X * exp_delta_X)
+                     - exp_delta_X * exp_delta_X * exp_delta_X * sin(2.0 * delta_theta)) / l72
+               + 3.0 * (exp_delta_X * sin(2 * delta_theta) - 3.0 * exp_delta_X * sin_delta_theta) / l52) * Xtheta_mass;
+
+    }
 
     //
     // 0th order component
     //
-    lft = ftheta0 / l32;
-    at -= lft * mass;
+    at -= ftheta0 / l32 * mass;
 
     //
     // 1st order components
     //
-    if( depth >= 1 ) {
-        lft = dlX * ftheta0;
-        at -= lft * X_mass;
+    if (depth >= 1) {
+        // X~ component of fr
+        at -= dlX * ftheta0 * X_mass;
 
         // theta~ component of ftheta
-        lft = dltheta * ftheta0;
-        lft -= cos_delta_theta / l32;
-        at -= lft * theta_mass;
+        at -= ((dltheta * ftheta0) - (cos_delta_theta / l32)) * theta_mass;
     }
+
+
+    //
+    // 2nd order components
+    //
+    if (depth >= 2) {
+
+        at -= (
+                (15.0 * (exp_delta_X*(cos_delta_theta-exp_delta_X)) * (exp_delta_X*(cos_delta_theta-exp_delta_X)) * ftheta0 / l72 )
+                -( 3.0 * exp_delta_X * ( 2.0 * exp_delta_X - cos_delta_theta) * ftheta0 / l52 )
+              ) * 0.5 * X2_mass;
+
+        at -= (
+                      (15.0 * exp_delta_X*exp_delta_X*sin_delta_theta*sin_delta_theta*sin_delta_theta / l72 )
+                - ( 3.0 * exp_delta_X * cos_delta_theta * sin_delta_theta / l52)
+                -( 6.0 * exp_delta_X * cos_delta_theta * sin_delta_theta / l52 )
+                -( sin_delta_theta / l32 )
+              ) *0.5 * theta2_mass;
+
+        at -= (
+                      ( 1.5 * cos_delta_theta * ( -1.0* exp_delta_X * ( exp_delta_X - 2.0*cos_delta_theta - exp_delta_X*exp_delta_X)) / l52 )
+        -( 7.5 * exp_delta_X*sin_delta_theta*sin_delta_theta * (-1.0 * exp_delta_X * ( exp_delta_X - 2.0*cos_delta_theta ) - exp_delta_X*exp_delta_X ) / l72 )
+        - ( 3.0 * exp_delta_X * sin_delta_theta * sin_delta_theta / l52 )
+              ) * Xtheta_mass;
+
+    }
+
 }
 
 
-/*
- void ExclusionDifferentialPolarTreeSelfGravityProvider::calcGravityForNode1(
-        int point,
-        QTNode *node,
-        vector<Disk::Segment> &segment,
-        double &ar,
-        double &at) {
-
-    int child = 0;
-    while (node->leaf[child] == nullptr && child < 4 ) {
-        child ++;
-    }
-    if (child == 4 ) {
-        return;
-    }
-
-    // Values we can reuse in both calculations
-    double theta_tilde = abs(node->leaf[child]->theta - node->theta);
-    double delta_theta = segment[point].theta - node->theta;
-    double diff_theta = delta_theta - theta_tilde;
-
-    double X_tilde = abs(node->leaf[child]->r - node->r);
-    double delta_X = segment[point].r - node->r;
-    double diff_X = delta_X - X_tilde;
-
-    double exp_delta_X = exp(delta_X);
-    double cos_delta_theta = cos(delta_theta);
-    double sin_delta_theta = sin(delta_theta);
-    double exp_diff_X = exp(diff_X);
-    double cos_diff_theta = cos(diff_theta);
-    double sin_diff_theta = sin(diff_theta);
-
-    double l = 1 + (exp_diff_X * (exp_diff_X - 2 * cos_diff_theta));
-    double l32 = l * sqrt(abs(l));
-    double l52 = l * l;
-
-    double lX = 3 * exp_delta_X * (exp_delta_X - cos_delta_theta) / l52;
-    double ltheta = 3 * exp_delta_X * sin_delta_theta / l52;
-
-    for (child = 0; child < 4; child++) {
-        if (node->leaf[child] != nullptr) {
-
-            // X~ component of fr
-            double lfr = lX * (exp_diff_X - cos_diff_theta);
-            lfr -= exp_delta_X / l32;
-            double a = -G * lfr * X_tilde * (node->leaf[child]->density * node->leaf[child]->area);
-
-            // theta~ component of fr
-            lfr = ltheta * (exp_diff_X - cos_diff_theta);
-            lfr -= sin_delta_theta / l32;
-            a += -G * lfr * theta_tilde  * (node->leaf[child]->density * node->leaf[child]->area);
-
-            ar += a;
-
-            // X~ component of ftheta
-            double lft = lX * sin_diff_theta;
-            a = -G * lft * X_tilde * (node->leaf[child]->density * node->leaf[child]->area);
-
-            // theta~ component of ftheta
-            lft = ltheta * sin_diff_theta;
-            lft -= cos_delta_theta / l32;
-            a += -G * lft * theta_tilde  * (node->leaf[child]->density * node->leaf[child]->area);
-
-            at += a;
-        }
-    }
-}
-
-
- */
-
-void ExclusionDifferentialPolarTreeSelfGravityProvider::calcGravityForNode2(
-        int point,
-        QTNode *node,
-        vector<Disk::Segment> &segment,
-        double &ar,
-        double &at) {
-
-    int child = 0;
-    while (node->leaf[child] == nullptr && child < 4) {
-        child++;
-    }
-    if (child == 4) {
-        return;
-    }
-
-    // Values we can reuse in both calculations
-    double theta_tilde = abs(node->leaf[child]->theta - node->theta);
-    double delta_theta = segment[point].theta - node->theta;
-    double diff_theta = delta_theta - theta_tilde;
-
-    double X_tilde = abs(node->leaf[child]->r - node->r);
-    double delta_X = segment[point].r - node->r;
-    double diff_X = delta_X - X_tilde;
-
-    double exp_delta_X = exp(delta_X);
-    double cos_delta_theta = cos(delta_theta);
-    double sin_delta_theta = sin(delta_theta);
-    double exp_diff_X = exp(diff_X);
-    double cos_diff_theta = cos(diff_theta);
-    double sin_diff_theta = sin(diff_theta);
-
-    double l = 1 + (exp_diff_X * (exp_diff_X - 2 * cos_diff_theta));
-    double l32 = l * sqrt(abs(l));
-    double l52 = l * l;
-
-    double lX = 3 * exp_delta_X * (exp_delta_X - cos_delta_theta) / l52;
-    double ltheta = 3 * exp_delta_X * sin_delta_theta / l52;
-
-    for (child = 0; child < 4; child++) {
-        if (node->leaf[child] != nullptr) {
-
-            // X~ component of fr
-            double lfr = lX * (exp_diff_X - cos_diff_theta);
-            lfr -= exp_delta_X / l32;
-            double a = -G * lfr * X_tilde * (node->leaf[child]->density * node->leaf[child]->area);
-
-            // theta~ component of fr
-            lfr = ltheta * (exp_diff_X - cos_diff_theta);
-            lfr -= sin_delta_theta / l32;
-            a += -G * lfr * theta_tilde * (node->leaf[child]->density * node->leaf[child]->area);
-
-            ar += a;
-
-            // X~ component of ftheta
-            double lft = lX * sin_diff_theta;
-            a = -G * lft * X_tilde * (node->leaf[child]->density * node->leaf[child]->area);
-
-            // theta~ component of ftheta
-            lft = ltheta * sin_diff_theta;
-            lft -= cos_delta_theta / l32;
-            a += -G * lft * theta_tilde * (node->leaf[child]->density * node->leaf[child]->area);
-
-            at += a;
-        }
-    }
-}

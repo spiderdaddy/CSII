@@ -19,7 +19,7 @@ public:
 
 private:
     void calcGravityForNode(int i1, QTNode *node, vector<Disk::Segment> &segment, double &ar, double &at);
-    void calcGravityForNodeDepth(int i1, QTNode *node, vector<Disk::Segment> &segment, double &ar, double &at, QTNode *excluded_node);
+    void calcGravityForNodeDepth(int i1, QTNode *node, vector<Disk::Segment> &segment, double &ar, double &at);
     bool isExcluded( QTNode * cell, QTNode * excluded_node );
 };
 

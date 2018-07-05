@@ -207,6 +207,7 @@ void ApplyGravities( string path,
                      string dataname,
                      unsigned r_cells,
                      unsigned theta_cells,
+                     unsigned min_depth,
                      unsigned max_depth,
                      unsigned min_resolution,
                      unsigned max_resolution) {
@@ -243,10 +244,9 @@ void ApplyGravities( string path,
         }
     }
 
-
     gp = new ExclusionSublevelPolarTreeSelfGravityProvider(disk);
     for (unsigned resolution = min_resolution; resolution <= max_resolution; resolution++) {
-        for (unsigned depth = 1; depth <= max_depth; depth++) {
+        for (unsigned depth = 0; depth <= max_depth; depth++) {
             ApplyGravity(disk, result_dir, "sub", gp, resolution, depth);
             waitforkey();
         }
@@ -327,6 +327,7 @@ void ApplyGravity(Disk *disk, string pathname, string data_name, GravityProvider
     while ( isRendering() ) {
         std::this_thread::sleep_for(chrono::milliseconds(1));
     }
+//    saveImage(filename_base);
     string csv_filename(filename_base);
     csv_filename.append(".csv");
     disk->saveGravities( csv_filename );

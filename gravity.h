@@ -13,6 +13,7 @@ void ApplyGravities( string path,
                      string dataname,
                      unsigned r_cells,
                      unsigned theta_cells,
+                     unsigned min_depth,
                      unsigned max_depth,
                      unsigned min_resolution,
                      unsigned max_resolution) ;
