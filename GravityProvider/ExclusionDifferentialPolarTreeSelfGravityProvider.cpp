@@ -204,10 +204,10 @@ void ExclusionDifferentialPolarTreeSelfGravityProvider::calcGravityForNode(
                - 6.0 * exp_delta_X * sin_delta_theta * sin_delta_theta / l52
                + cos_delta_theta / l32) * 0.5 * theta2_mass;
 
-        ar -= (15.0 * (sin_delta_theta * (exp_delta_X * exp_delta_X * cos_delta_theta * cos_delta_theta -
+        ar -= (15.0 * (sin_delta_theta * (exp_delta_X * exp_delta_X * cos_delta_theta * cos_delta_theta +
                                         exp_delta_X * exp_delta_X * exp_delta_X * exp_delta_X)
                      - exp_delta_X * exp_delta_X * exp_delta_X * sin(2.0 * delta_theta)) / l72
-               + 3.0 * (exp_delta_X * sin(2 * delta_theta) - 3.0 * exp_delta_X * sin_delta_theta) / l52) * Xtheta_mass;
+               + 3.0 * (exp_delta_X * sin(2 * delta_theta) - 3.0 * exp_delta_X * exp_delta_X * sin_delta_theta) / l52) * Xtheta_mass;
 
     }
 
