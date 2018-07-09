@@ -21,7 +21,7 @@ int main(int argc, char *argv[]) {
     Initialize(argc, argv);
 
     std::thread graphics (GraphicsMainLoop);
-/*
+
     ApplyGravities(
             "/data/UZH/CSII/data1",
             "density",
@@ -29,19 +29,19 @@ int main(int argc, char *argv[]) {
             256,
             0,
             2,
-            4,
+            6,
             6);
-*/
+
 
     ApplyGravities(
             "/data/UZH/CSII/data1",
             "density_planet",
             128,
             256,
+            0,
             2,
-            2,
-            5,
-            5);
+            6,
+            6);
 
 /*
     ApplyGravities(

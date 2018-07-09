@@ -238,7 +238,7 @@ void ApplyGravities( string path,
 
     gp = new ExclusionDifferentialPolarTreeSelfGravityProvider(disk);
     for (unsigned resolution = min_resolution; resolution <= max_resolution; resolution++) {
-        for (unsigned depth = 0; depth <= max_depth; depth++) {
+        for (unsigned depth = min_depth; depth <= max_depth; depth++) {
             ApplyGravity(disk, result_dir, "diff", gp, resolution, depth);
             waitforkey();
         }
@@ -246,7 +246,7 @@ void ApplyGravities( string path,
 
     gp = new ExclusionSublevelPolarTreeSelfGravityProvider(disk);
     for (unsigned resolution = min_resolution; resolution <= max_resolution; resolution++) {
-        for (unsigned depth = 0; depth <= max_depth; depth++) {
+        for (unsigned depth = min_depth; depth <= max_depth; depth++) {
             ApplyGravity(disk, result_dir, "sub", gp, resolution, depth);
             waitforkey();
         }

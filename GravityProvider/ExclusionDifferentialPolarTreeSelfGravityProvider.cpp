@@ -40,7 +40,7 @@ void ExclusionDifferentialPolarTreeSelfGravityProvider::calculate() {
             double at = 0;
 
             QTNode *node = segment[point].node;
-            QTNode * child = nullptr;
+            QTNode *child = nullptr;
 
             // For level 0 calculate all lowest level in neighbours of the node
             for (QTNode *cell : node->neighbour) {
@@ -116,6 +116,45 @@ void ExclusionDifferentialPolarTreeSelfGravityProvider::calcGravityForNode(
         double &ar,
         double &at) {
 
+    // The integral sigma * dXdT
+    double mass = node->density * node->area;
+
+    double delta_theta = segment[point].theta - node->theta;
+
+    double delta_X = segment[point].r - node->r;
+
+    double exp_delta_X = exp(delta_X);
+    double cos_delta_theta = cos(delta_theta);
+    double sin_delta_theta = sin(delta_theta);
+
+    double l = 1.0 + (exp_delta_X * (exp_delta_X - (2.0 * cos_delta_theta)));
+    double l32 = l * sqrt(abs(l));
+    double l52 = 0;
+
+    double dlX = 3.0 * exp_delta_X * (exp_delta_X - cos_delta_theta) / l52;
+    double dltheta = 3.0 * exp_delta_X * sin_delta_theta / l52;
+
+    double fr0 = (exp_delta_X - cos_delta_theta);
+    double ftheta0 = sin_delta_theta;
+
+    double exp_delta_X_2 = 0;
+    double exp_minus_2_cos = 0;
+    double exp_exp_2cos_exp_2 = 0;
+
+
+    //
+    // 0th order components
+    //
+    ar -= fr0 / l32 * mass;
+
+    at -= ftheta0 / l32 * mass;
+
+
+
+    //
+    // 1st order components
+    //
+
     // Calculate integrals for X_tilde and theta_tilde
     double X_mass = 0;
     double theta_mass = 0;
@@ -130,7 +169,31 @@ void ExclusionDifferentialPolarTreeSelfGravityProvider::calcGravityForNode(
             }
         }
 
+        exp_delta_X_2 = exp_delta_X * exp_delta_X;
+        exp_minus_2_cos = exp_delta_X - (2.0 * cos_delta_theta);
+        exp_exp_2cos_exp_2 = ((-1.0 * exp_delta_X) * exp_minus_2_cos) - exp_delta_X_2;
+        l52 = l * l32;
+
+
+        // X~ component of fr
+        ar -= ((dlX * fr0) - (exp_delta_X / l32)) * X_mass;
+
+        // theta~ component of fr
+        ar -= ((dltheta * fr0) - (sin_delta_theta / l32)) * theta_mass;
+
+        // X~ component of fr
+        at -= -1.5 * exp_exp_2cos_exp_2 / l52 * ftheta0 * X_mass;
+
+        // theta~ component of ftheta
+        at -= ((dltheta * ftheta0) - (cos_delta_theta / l32)) * theta_mass;
+
     }
+
+
+    //
+    // 2nd order components
+    //
+
     double X2_mass = 0;
     double theta2_mass = 0;
     double Xtheta_mass = 0;
@@ -146,111 +209,42 @@ void ExclusionDifferentialPolarTreeSelfGravityProvider::calcGravityForNode(
             }
         }
 
-    }
+        double l72 = l * l52;
 
-
-    // The integral sigma * dXdT
-    double mass = node->density * node->area;
-
-    double delta_theta = segment[point].theta - node->theta;
-
-    double delta_X = segment[point].r - node->r;
-
-    double exp_delta_X = exp(delta_X);
-    double cos_delta_theta = cos(delta_theta);
-    double sin_delta_theta = sin(delta_theta);
-
-    double l = 1.0 + (exp_delta_X * (exp_delta_X - (2.0 * cos_delta_theta)));
-    double l32 = l * sqrt(abs(l));
-    double l52 = l * l32;
-    double l72 = l * l52;
-
-    double dlX = 3.0 * exp_delta_X * (exp_delta_X - cos_delta_theta) / l52;
-    double dltheta = 3.0 * exp_delta_X * sin_delta_theta / l52;
-
-    double fr0 = (exp_delta_X - cos_delta_theta);
-    double ftheta0 = sin_delta_theta;
-
-    //
-    // 0th order component
-    //
-    ar -= fr0 / l32 * mass;
-
-    //
-    // 1st order components
-    //
-    if (depth >= 1) {
-        // X~ component of fr
-        ar -= ((dlX * fr0) - (exp_delta_X / l32)) * X_mass;
-
-        // theta~ component of fr
-        ar -= ((dltheta * fr0) - (sin_delta_theta / l32)) * theta_mass;
-    }
-
-
-    //
-    // 2nd order components
-    //
-    if (depth >= 2) {
-        ar -= exp_delta_X * (
-                (fr0 * 15.0 *
-                 (exp_delta_X * exp_delta_X * (cos_delta_theta - exp_delta_X) * (cos_delta_theta - exp_delta_X))) / l72
-                - (fr0 * 3.0 * (2.0 * exp_delta_X - cos_delta_theta)) / l52
-                - (6.0 * exp_delta_X * exp_delta_X - exp_delta_X * cos_delta_theta) / l52
-                + 1.0 / l32) * 0.5 * X2_mass;
-
-        ar -= ((fr0 * 15.0 * (exp_delta_X * sin_delta_theta) * (exp_delta_X * sin_delta_theta)) / l72
-               - (fr0 * 3.0 * exp_delta_X * cos_delta_theta) / l52
-               - 6.0 * exp_delta_X * sin_delta_theta * sin_delta_theta / l52
-               + cos_delta_theta / l32) * 0.5 * theta2_mass;
-
-        ar -= (15.0 * (sin_delta_theta * (exp_delta_X * exp_delta_X * cos_delta_theta * cos_delta_theta +
-                                        exp_delta_X * exp_delta_X * exp_delta_X * exp_delta_X)
-                     - exp_delta_X * exp_delta_X * exp_delta_X * sin(2.0 * delta_theta)) / l72
-               + 3.0 * (exp_delta_X * sin(2 * delta_theta) - 3.0 * exp_delta_X * exp_delta_X * sin_delta_theta) / l52) * Xtheta_mass;
-
-    }
-
-    //
-    // 0th order component
-    //
-    at -= ftheta0 / l32 * mass;
-
-    //
-    // 1st order components
-    //
-    if (depth >= 1) {
-        // X~ component of fr
-        at -= dlX * ftheta0 * X_mass;
-
-        // theta~ component of ftheta
-        at -= ((dltheta * ftheta0) - (cos_delta_theta / l32)) * theta_mass;
-    }
-
-
-    //
-    // 2nd order components
-    //
-    if (depth >= 2) {
-
-        at -= (
-                (15.0 * (exp_delta_X*(cos_delta_theta-exp_delta_X)) * (exp_delta_X*(cos_delta_theta-exp_delta_X)) * ftheta0 / l72 )
-                -( 3.0 * exp_delta_X * ( 2.0 * exp_delta_X - cos_delta_theta) * ftheta0 / l52 )
+        ar -= (
+                 ( exp_delta_X / l32 )
+               - ( 1.5 * ((exp_delta_X * exp_minus_2_cos) + (3.0 * exp_delta_X_2)) * fr0 / l52)
+               + ( 3.75 * exp_exp_2cos_exp_2 * exp_exp_2cos_exp_2 * fr0 / l72)
+               + ( 3.0 * exp_delta_X * exp_exp_2cos_exp_2 / l52)
               ) * 0.5 * X2_mass;
-
-        at -= (
-                      (15.0 * exp_delta_X*exp_delta_X*sin_delta_theta*sin_delta_theta*sin_delta_theta / l72 )
-                - ( 3.0 * exp_delta_X * cos_delta_theta * sin_delta_theta / l52)
-                -( 6.0 * exp_delta_X * cos_delta_theta * sin_delta_theta / l52 )
-                -( sin_delta_theta / l32 )
-              ) *0.5 * theta2_mass;
-
-        at -= (
-                      ( 1.5 * cos_delta_theta * ( -1.0* exp_delta_X * ( exp_delta_X - 2.0*cos_delta_theta - exp_delta_X*exp_delta_X)) / l52 )
-        -( 7.5 * exp_delta_X*sin_delta_theta*sin_delta_theta * (-1.0 * exp_delta_X * ( exp_delta_X - 2.0*cos_delta_theta ) - exp_delta_X*exp_delta_X ) / l72 )
-        - ( 3.0 * exp_delta_X * sin_delta_theta * sin_delta_theta / l52 )
+        ar -= (
+                 (cos_delta_theta / l32)
+               - ( 6.0 * exp_delta_X * sin_delta_theta * sin_delta_theta / l52)
+               - ( 3.0 * exp_delta_X * cos_delta_theta * fr0 / l52)
+               + ( 15.0 * exp_delta_X_2 * sin_delta_theta * sin_delta_theta * fr0 / l72)
+              ) * 0.5 * theta2_mass;
+        ar -= (
+                 ( 1.5 * sin_delta_theta * exp_exp_2cos_exp_2 / l52)
+               - ( 3.0 * exp_delta_X * sin_delta_theta * fr0 / l52)
+               - ( 7.5 * exp_delta_X * sin_delta_theta * exp_exp_2cos_exp_2 * fr0 / l72)
+               - ( 3.0 * exp_delta_X_2 * sin_delta_theta / l52)
               ) * Xtheta_mass;
 
+        at -= (
+                 ( 3.75 * sin_delta_theta * exp_exp_2cos_exp_2 * exp_exp_2cos_exp_2 / l72)
+               - ( 1.5 * sin_delta_theta * ((exp_delta_X * exp_minus_2_cos) + (3.0 * exp_delta_X_2)) / l52)
+              ) * 0.5 * X2_mass;
+        at -= (
+                 ( 15.0 * exp_delta_X * exp_delta_X * sin_delta_theta * sin_delta_theta * sin_delta_theta / l72)
+               - ( 9.0 * exp_delta_X * cos_delta_theta * sin_delta_theta / l52)
+               - ( sin_delta_theta / l32)
+              ) * 0.5 * theta2_mass;
+
+        at -= (
+                  ( 1.5 * cos_delta_theta * exp_exp_2cos_exp_2 / l52)
+                - ( 7.5 * exp_delta_X * sin_delta_theta * sin_delta_theta * exp_exp_2cos_exp_2 / l72)
+                - ( 3.0 * exp_delta_X * sin_delta_theta * sin_delta_theta / l52)
+              ) * Xtheta_mass;
     }
 
 }

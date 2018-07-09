@@ -109,17 +109,17 @@ void ExclusionSublevelPolarTreeSelfGravityProvider::calcGravityForNodeDepth(
      * For deeper levels we would implement a recursion down the tree for 'depth' levels
      */
     if (depth >= 1 && node->tree_level > 0 ) {
-        for (int j = 0; j < 4; j++) {
-            if (node->leaf[j] != nullptr) {
+        for (int l1 = 0; l1 < 4; l1++) {
+            if (node->leaf[l1] != nullptr) {
                 if (depth >= 2 && node->tree_level > 1 ) {
-                    for (int j = 0; j < 4; j++) {
-                        if (node->leaf[j] != nullptr) {
+                    for (int l2 = 0; l2 < 4; l2++) {
+                        if (node->leaf[l1]->leaf[l2] != nullptr) {
 
-                            calcGravityForNode(point, node->leaf[j], segment, ar, at);
+                            calcGravityForNode(point, node->leaf[l1]->leaf[l2], segment, ar, at);
                         }
                     }
                 } else {
-                    calcGravityForNode(point, node, segment, ar, at);
+                    calcGravityForNode(point, node->leaf[l1], segment, ar, at);
                 }
             }
         }
