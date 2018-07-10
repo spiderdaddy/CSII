@@ -244,6 +244,8 @@ void ApplyGravities( string path,
         }
     }
 
+    if (max_depth == 0 ) return;
+
     gp = new ExclusionSublevelPolarTreeSelfGravityProvider(disk);
     for (unsigned resolution = min_resolution; resolution <= max_resolution; resolution++) {
         for (unsigned depth = min_depth; depth <= max_depth; depth++) {
@@ -255,54 +257,6 @@ void ApplyGravities( string path,
 
 }
 
-/*
-    disk = new Disk(128, 256, "/data/UZH/CSII/data1/density_planet.data");
-    setDisk(disk);
-
-    gp = new ExclusionSublevelPolarTreeSelfGravityProvider( disk );
-    for( int resolution = min_resolution; resolution < max_resolution; resolution++ ) {
-        for(int depth = 0; depth < 1; depth++ ) {
-            ApplyGravity(disk, "density_planet-sub", gp, resolution, depth);
-            saveImage( "density_planet-sub.png" );
-            waitforkey();
-        }
-    }
-
-    disk = new Disk(512, 512, "/data/UZH/CSII/data1/density_final_05k.data");
-    setDisk(disk);
-    gp = new ExclusionSublevelPolarTreeSelfGravityProvider( disk );
-    for( int resolution = min_resolution; resolution < max_resolution; resolution++ ) {
-        for(int depth = 1; depth < 2; depth++ ) {
-            ApplyGravity(disk, "density_planet-sub", gp, resolution, depth);
-            disk->MapGravityToColor();
-            saveImage( "density_planet-sub", 512, 512);
-            waitforkey();
-        }
-    }
-
-    disk = new Disk(1024, 1024, "/data/UZH/CSII/data1/density_final_1k.data");
-    setDisk(disk);
-    gp = new ExclusionSublevelPolarTreeSelfGravityProvider( disk );
-    for( int resolution = min_resolution; resolution < max_resolution; resolution++ ) {
-        for(int depth = 1; depth < 2; depth++ ) {
-            ApplyGravity(disk, "density_planet-sub", gp, resolution, depth);
-            disk->MapGravityToColor();
-            saveImage( "density_planet-sub", 1024, 1024);
-            waitforkey();
-        }
-    }
-
-
-    gp = new ExclusionDifferentialPolarTreeSelfGravityProvider( disk );
-    for( int resolution = min_resolution; resolution < max_resolution; resolution++ ) {
-        for(int depth = 1; depth < 2; depth++ ) {
-            ApplyGravity(disk, "density_planet-diff", gp, resolution, depth);
-            disk->MapGravityToColor();
-            waitforkey();
-        }
-    }
-
-*/
 
 void ApplyGravity(Disk *disk, string pathname, string data_name, GravityProvider *gp, int resolution, int depth) {
 

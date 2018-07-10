@@ -131,9 +131,6 @@ void ExclusionDifferentialPolarTreeSelfGravityProvider::calcGravityForNode(
     double l32 = l * sqrt(abs(l));
     double l52 = 0;
 
-    double dlX = 3.0 * exp_delta_X * (exp_delta_X - cos_delta_theta) / l52;
-    double dltheta = 3.0 * exp_delta_X * sin_delta_theta / l52;
-
     double fr0 = (exp_delta_X - cos_delta_theta);
     double ftheta0 = sin_delta_theta;
 
@@ -173,10 +170,10 @@ void ExclusionDifferentialPolarTreeSelfGravityProvider::calcGravityForNode(
         exp_minus_2_cos = exp_delta_X - (2.0 * cos_delta_theta);
         exp_exp_2cos_exp_2 = ((-1.0 * exp_delta_X) * exp_minus_2_cos) - exp_delta_X_2;
         l52 = l * l32;
-
+        double dltheta = 3.0 * exp_delta_X * sin_delta_theta / l52;
 
         // X~ component of fr
-        ar -= ((dlX * fr0) - (exp_delta_X / l32)) * X_mass;
+        ar -= ( (3.0 * exp_delta_X * (exp_delta_X - cos_delta_theta) / l52 * fr0) - (exp_delta_X / l32) ) * X_mass;
 
         // theta~ component of fr
         ar -= ((dltheta * fr0) - (sin_delta_theta / l32)) * theta_mass;
